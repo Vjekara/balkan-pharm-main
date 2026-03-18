@@ -47,6 +47,7 @@
   const titles = {
     dashboard: 'Nadzorna ploča',
     plants: 'Biljke i dnevnik',
+    cpvo: 'CPVO-obrazac',
     growlog: 'Growlog',
     toolbox: 'Alati',
   };
@@ -82,7 +83,7 @@
     item.addEventListener('click', (e) => {
       e.preventDefault();
       const view = item.dataset.view;
-      if (view === 'plants') currentGrowlogPlantId = null;
+      if (view !== 'growlog') currentGrowlogPlantId = null;
       showView(view);
     });
   });
