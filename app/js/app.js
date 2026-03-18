@@ -597,17 +597,41 @@
   const entryTypeEl = document.getElementById('entry-type');
   if (entryTypeEl) entryTypeEl.addEventListener('change', updateEntryExtraVisibility);
 
-  document.getElementById('btn-add-entry').addEventListener('click', () => {
+  function openEntryModal(plantId) {
+    if (!modalEntry) return;
     fillEntryPlantSelect();
-    document.getElementById('form-entry').reset();
+    const form = document.getElementById('form-entry');
+    if (form) form.reset();
     document.getElementById('entry-date').value = new Date().toISOString().slice(0, 10);
     document.getElementById('entry-photo-data').value = '';
     document.getElementById('entry-video-data').value = '';
     document.getElementById('entry-photo-preview').innerHTML = '';
     document.getElementById('entry-video-preview').innerHTML = '';
+    const plantSelect = document.getElementById('entry-plant');
+    if (plantSelect) {
+      if (plantId) {
+        plantSelect.value = plantId;
+        plantSelect.disabled = true;
+      } else {
+        plantSelect.disabled = false;
+      }
+    }
     updateEntryExtraVisibility();
     modalEntry.classList.add('open');
-  });
+  }
+
+  const btnAddEntry = document.getElementById('btn-add-entry');
+  if (btnAddEntry) {
+    btnAddEntry.addEventListener('click', () => openEntryModal(null));
+  }
+
+  const btnAddEntryGrowlog = document.getElementById('btn-add-entry-growlog');
+  if (btnAddEntryGrowlog) {
+    btnAddEntryGrowlog.addEventListener('click', () => {
+      if (!currentGrowlogPlantId) return;
+      openEntryModal(currentGrowlogPlantId);
+    });
+  }
 
   document.getElementById('entry-photo').addEventListener('change', async (e) => {
     const file = e.target.files[0];
@@ -691,13 +715,23 @@
       meta: meta || undefined,
     });
     setEntries(entries);
+    const plantSelect = document.getElementById('entry-plant');
+    if (plantSelect) plantSelect.disabled = false;
     modalEntry.classList.remove('open');
     renderJournal();
     renderDashboard();
   });
 
-  modalEntry.querySelector('.modal-close').addEventListener('click', () => modalEntry.classList.remove('open'));
-  modalEntry.querySelector('.modal-cancel').addEventListener('click', () => modalEntry.classList.remove('open'));
+  modalEntry.querySelector('.modal-close').addEventListener('click', () => {
+    const plantSelect = document.getElementById('entry-plant');
+    if (plantSelect) plantSelect.disabled = false;
+    modalEntry.classList.remove('open');
+  });
+  modalEntry.querySelector('.modal-cancel').addEventListener('click', () => {
+    const plantSelect = document.getElementById('entry-plant');
+    if (plantSelect) plantSelect.disabled = false;
+    modalEntry.classList.remove('open');
+  });
 
   // --- Toolbox (Alati) ---
   const STORAGE_TOOLBOX = 'balkan-pharm-toolbox';
