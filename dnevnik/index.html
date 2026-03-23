@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="hr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Prijava – Balkan-pharm dnevnik</title>
+  <link rel="icon" type="image/png" href="../images/bp.png" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --bg: #071411;
+      --bg-alt: #0b1f19;
+      --surface: rgba(255, 255, 255, 0.06);
+      --text: rgba(255, 255, 255, 0.94);
+      --text-muted: rgba(255, 255, 255, 0.72);
+      --accent: #0d9488;
+      --accent-bright: #2dd4bf;
+      --border: rgba(255, 255, 255, 0.14);
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      min-height: 100vh;
+      display: grid;
+      place-items: center;
+      padding: 1rem;
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      background: radial-gradient(900px 500px at 50% -10%, rgba(45,212,191,0.18), transparent), var(--bg);
+      color: var(--text);
+    }
+    .login-card {
+      width: 100%;
+      max-width: 420px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 1.25rem;
+      box-shadow: 0 20px 50px rgba(0, 0, 0, 0.35);
+    }
+    .logo {
+      height: 52px;
+      display: block;
+      margin: 0 auto 0.75rem;
+    }
+    h1 {
+      margin: 0 0 0.5rem;
+      font-size: 1.25rem;
+      text-align: center;
+    }
+    p {
+      margin: 0 0 1rem;
+      color: var(--text-muted);
+      text-align: center;
+      font-size: 0.92rem;
+    }
+    label {
+      display: block;
+      font-size: 0.9rem;
+      margin-bottom: 0.35rem;
+    }
+    input {
+      width: 100%;
+      margin-bottom: 0.85rem;
+      padding: 0.65rem 0.75rem;
+      border-radius: 10px;
+      border: 1px solid var(--border);
+      background: var(--bg-alt);
+      color: var(--text);
+      font-family: inherit;
+    }
+    input:focus {
+      outline: none;
+      border-color: var(--accent);
+    }
+    button {
+      width: 100%;
+      border: 0;
+      border-radius: 10px;
+      padding: 0.7rem 0.9rem;
+      font-weight: 700;
+      color: #06201a;
+      background: linear-gradient(90deg, var(--accent), var(--accent-bright));
+      cursor: pointer;
+    }
+    .back-link {
+      margin-top: 0.85rem;
+      text-align: center;
+      font-size: 0.9rem;
+    }
+    .back-link a { color: var(--accent-bright); text-decoration: none; }
+  </style>
+</head>
+<body>
+  <form class="login-card" id="login-form">
+    <img class="logo" src="../images/bp.png" alt="Balkan-pharm" />
+    <h1>Prijava u dnevnik</h1>
+    <p>Prijavite se da otvorite aplikaciju dnevnika uzgoja.</p>
+    <label for="email">E-mail</label>
+    <input id="email" type="email" required placeholder="vas@email.com" />
+    <label for="password">Lozinka</label>
+    <input id="password" type="password" required placeholder="••••••••" />
+    <button type="submit">Prijavi se</button>
+    <div class="back-link"><a href="../index.html">← Povratak na početnu</a></div>
+  </form>
+  <script>
+    (function () {
+      var form = document.getElementById('login-form');
+      var STORAGE_AUTH = 'balkan-pharm-auth';
+      if (localStorage.getItem(STORAGE_AUTH)) {
+        window.location.href = '../app/dnevnik/';
+        return;
+      }
+      form.addEventListener('submit', function (e) {
+        e.preventDefault();
+        var email = document.getElementById('email').value.trim();
+        var password = document.getElementById('password').value;
+        if (!email || !password) return;
+        localStorage.setItem(STORAGE_AUTH, JSON.stringify({ email: email, loggedAt: Date.now() }));
+        window.location.href = '../app/dnevnik/';
+      });
+    })();
+  </script>
+</body>
+</html>

@@ -1,4 +1,10 @@
 (function () {
+  const STORAGE_AUTH = 'balkan-pharm-auth';
+  if (!localStorage.getItem(STORAGE_AUTH)) {
+    window.location.replace('../dnevnik/');
+    return;
+  }
+
   const STORAGE_PLANTS = 'balkan-pharm-plants';
   const STORAGE_ENTRIES = 'balkan-pharm-entries';
 
@@ -44,6 +50,7 @@
   const navItems = document.querySelectorAll('.nav-item');
   const views = document.querySelectorAll('.view');
   const viewTitle = document.querySelector('.view-title');
+  const logoutBtn = document.getElementById('btn-logout');
   const titles = {
     dashboard: 'Nadzorna ploča',
     plants: 'Biljke i dnevnik',
@@ -53,6 +60,13 @@
   };
 
   let currentGrowlogPlantId = null;
+
+  if (logoutBtn) {
+    logoutBtn.addEventListener('click', () => {
+      localStorage.removeItem(STORAGE_AUTH);
+      window.location.replace('../dnevnik/');
+    });
+  }
 
   function showView(id, extra) {
     views.forEach((v) => v.classList.remove('active'));
@@ -1020,5 +1034,11 @@
   // Init
   fillEntryPlantSelect();
   fillJournalPlantFilter();
-  renderDashboard();
+  const params = new URLSearchParams(window.location.search);
+  const initialView = params.get('view');
+  if (initialView && ['dashboard', 'plants', 'cpvo', 'toolbox'].includes(initialView)) {
+    showView(initialView);
+  } else {
+    renderDashboard();
+  }
 })();
