@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Prijava – Balkan-pharm dnevnik</title>
+  <title>Prijava – balpha.shop dnevnik</title>
   <link rel="icon" type="image/png" href="../images/bp.png" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -94,7 +94,7 @@
 </head>
 <body>
   <form class="login-card" id="login-form">
-    <img class="logo" src="../images/bp.png" alt="Balkan-pharm" />
+    <img class="logo" src="../images/bp.png" alt="balpha.shop" />
     <h1>Prijava u dnevnik</h1>
     <p>Prijavite se da otvorite aplikaciju dnevnika uzgoja.</p>
     <label for="email">E-mail</label>
@@ -107,7 +107,7 @@
   <script>
     (function () {
       var form = document.getElementById('login-form');
-      var STORAGE_AUTH = 'balkan-pharm-auth';
+      var STORAGE_AUTH = 'balpha-shop-auth';
       if (localStorage.getItem(STORAGE_AUTH)) {
         window.location.href = '../app/dnevnik/';
         return;

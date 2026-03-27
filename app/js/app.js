@@ -1,12 +1,12 @@
 (function () {
-  const STORAGE_AUTH = 'balkan-pharm-auth';
+  const STORAGE_AUTH = 'balpha-shop-auth';
   if (!localStorage.getItem(STORAGE_AUTH)) {
     window.location.replace('../dnevnik/');
     return;
   }
 
-  const STORAGE_PLANTS = 'balkan-pharm-plants';
-  const STORAGE_ENTRIES = 'balkan-pharm-entries';
+  const STORAGE_PLANTS = 'balpha-shop-plants';
+  const STORAGE_ENTRIES = 'balpha-shop-entries';
 
   const STAGES = {
     klijanje: 'Klijanje',
@@ -749,7 +749,7 @@
   });
 
   // --- Toolbox (Alati) ---
-  const STORAGE_TOOLBOX = 'balkan-pharm-toolbox';
+  const STORAGE_TOOLBOX = 'balpha-shop-toolbox';
 
   function getToolboxData() {
     try {
