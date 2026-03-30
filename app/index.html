@@ -61,6 +61,7 @@
 
       <div id="view-dashboard" class="view active">
         <div class="dashboard-cards" id="dashboard-cards"></div>
+        <section class="dashboard-weather" id="dashboard-weather" aria-live="polite"></section>
         <section class="dashboard-charts-section" id="dashboard-charts-section">
           <h2>Pregled iz Alata</h2>
           <div class="dashboard-charts-grid" id="dashboard-charts"></div>
@@ -195,7 +196,7 @@
             <form class="toolbox-form" id="toolbox-form-watering">
               <label>Datum <input type="date" id="tool-watering-date" required /></label>
               <label>Količina (mL) <input type="number" id="tool-watering-value1" min="0" placeholder="npr. 500" required /></label>
-              <label>Biljka <select id="tool-watering-value2"><option value="">— Sve —</option></select></label>
+              <label>Biljka <select id="tool-watering-value2" required><option value="">-- Odaberi biljku --</option></select></label>
               <button type="submit" class="btn btn-primary">Dodaj</button>
             </form>
             <div class="toolbox-list" id="toolbox-list-watering"></div>
@@ -207,6 +208,7 @@
               <label>Datum <input type="date" id="tool-feeding-date" required /></label>
               <label>Proizvod / doza <input type="text" id="tool-feeding-value1" placeholder="npr. NPK 1 mL/L" required /></label>
               <label>Napomena <input type="text" id="tool-feeding-value2" placeholder="Opcionalno" /></label>
+              <label>Biljka <select id="tool-feeding-plant" required><option value="">-- Odaberi biljku --</option></select></label>
               <button type="submit" class="btn btn-primary">Dodaj</button>
             </form>
             <div class="toolbox-list" id="toolbox-list-feeding"></div>
@@ -219,6 +221,7 @@
               <label>Temperatura (°C) <input type="number" id="tool-environment-value1" step="0.1" placeholder="npr. 24" required /></label>
               <label>Vlažnost (%) <input type="number" id="tool-environment-value2" min="0" max="100" placeholder="npr. 60" /></label>
               <label>pH (voda/tlo) <input type="number" id="tool-environment-value3" step="0.1" min="0" max="14" placeholder="npr. 6.2" /></label>
+              <label>Biljka <select id="tool-environment-plant" required><option value="">-- Odaberi biljku --</option></select></label>
               <button type="submit" class="btn btn-primary">Dodaj</button>
             </form>
             <div class="toolbox-list" id="toolbox-list-environment"></div>
@@ -231,6 +234,7 @@
               <label>Kvaliteta zemlje <input type="text" id="tool-transplant-soil" placeholder="npr. kvalitetna, organska" /></label>
               <label>Starost biljke u presađivanju <input type="text" id="tool-transplant-age" placeholder="npr. 3 tjedna" /></label>
               <label>Stanje biljke <input type="text" id="tool-transplant-condition" placeholder="npr. zdrava, dobro ukorijenjena" /></label>
+              <label>Biljka <select id="tool-transplant-plant" required><option value="">-- Odaberi biljku --</option></select></label>
               <button type="submit" class="btn btn-primary">Dodaj</button>
             </form>
             <div class="toolbox-list" id="toolbox-list-transplant"></div>
@@ -243,12 +247,18 @@
               <label>Vlaga <input type="text" id="tool-stressors-humidity" placeholder="npr. suho, vlažno" /></label>
               <label>VPD (ukupnost svjetlosnih čestica u toku dana) <input type="text" id="tool-stressors-vpd" placeholder="npr. vrijednost ili opis" /></label>
               <label>Nametnici <input type="text" id="tool-stressors-pests" placeholder="npr. grinje, uši" /></label>
+              <label>Biljka <select id="tool-stressors-plant" required><option value="">-- Odaberi biljku --</option></select></label>
               <button type="submit" class="btn btn-primary">Dodaj</button>
             </form>
             <div class="toolbox-list" id="toolbox-list-stressors"></div>
           </div>
           <div id="toolbox-panel-graphs" class="toolbox-panel toolbox-panel-graphs" data-tool="graphs" aria-hidden="true">
             <h3 class="toolbox-panel-title">Pregled svih grafova</h3>
+            <div class="journal-filters" style="margin-bottom: 1rem;">
+              <select id="tool-graphs-plant">
+                <option value="">Sve biljke</option>
+              </select>
+            </div>
             <div class="toolbox-overview-charts">
               <div class="toolbox-overview-block"><h4>Zalijevanje</h4><div class="toolbox-chart" id="overview-chart-watering"></div></div>
               <div class="toolbox-overview-block"><h4>Okoliš (temperatura, vlažnost, pH)</h4><div class="toolbox-chart" id="overview-chart-environment"></div></div>

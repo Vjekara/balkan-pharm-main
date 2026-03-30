@@ -299,6 +299,295 @@
         if (hasEnv && typeof renderToolboxChart === 'function') renderToolboxChart('environment', document.getElementById('dashboard-chart-environment'));
       }
     }
+
+    renderWeatherWidget();
+  }
+
+  const WEATHER_CACHE_KEY = 'balpha-shop-weather-cache';
+  const WEATHER_PREF_KEY = 'balpha-shop-weather-pref';
+  const WEATHER_CACHE_MS = 10 * 60 * 1000;
+
+  function fmtNumber(x, digits = 0) {
+    const n = Number(x);
+    if (!Number.isFinite(n)) return '—';
+    return n.toFixed(digits);
+  }
+
+  function getWeatherCache() {
+    try {
+      const raw = localStorage.getItem(WEATHER_CACHE_KEY);
+      return raw ? JSON.parse(raw) : null;
+    } catch {
+      return null;
+    }
+  }
+
+  function getWeatherPref() {
+    try {
+      const raw = localStorage.getItem(WEATHER_PREF_KEY);
+      return raw ? JSON.parse(raw) : null;
+    } catch {
+      return null;
+    }
+  }
+
+  function setWeatherPref(pref) {
+    try {
+      if (!pref) localStorage.removeItem(WEATHER_PREF_KEY);
+      else localStorage.setItem(WEATHER_PREF_KEY, JSON.stringify(pref));
+    } catch {
+      // ignore
+    }
+  }
+
+  function setWeatherCache(data) {
+    try {
+      localStorage.setItem(WEATHER_CACHE_KEY, JSON.stringify(data));
+    } catch {
+      // ignore
+    }
+  }
+
+  function getCurrentPositionPromise(timeoutMs = 9000) {
+    return new Promise((resolve, reject) => {
+      if (!navigator.geolocation) {
+        reject(new Error('no_geolocation'));
+        return;
+      }
+      const t = setTimeout(() => reject(new Error('timeout')), timeoutMs);
+      navigator.geolocation.getCurrentPosition(
+        (pos) => {
+          clearTimeout(t);
+          resolve(pos);
+        },
+        (err) => {
+          clearTimeout(t);
+          reject(err || new Error('geolocation_error'));
+        },
+        { enableHighAccuracy: false, maximumAge: 10 * 60 * 1000, timeout: timeoutMs }
+      );
+    });
+  }
+
+  async function fetchWeather(lat, lon) {
+    const url =
+      'https://api.open-meteo.com/v1/forecast?latitude=' +
+      encodeURIComponent(lat) +
+      '&longitude=' +
+      encodeURIComponent(lon) +
+      '&current=temperature_2m,relative_humidity_2m,wind_speed_10m,precipitation' +
+      '&timezone=auto';
+    const res = await fetch(url);
+    if (!res.ok) throw new Error('weather_http_' + res.status);
+    return await res.json();
+  }
+
+  async function fetchPlaceName(lat, lon) {
+    const url =
+      'https://geocoding-api.open-meteo.com/v1/reverse?latitude=' +
+      encodeURIComponent(lat) +
+      '&longitude=' +
+      encodeURIComponent(lon) +
+      '&language=hr&format=json';
+    const res = await fetch(url);
+    if (!res.ok) return null;
+    const json = await res.json();
+    const r = json && json.results && json.results[0] ? json.results[0] : null;
+    if (!r) return null;
+    const parts = [r.name, r.admin1, r.country].filter(Boolean);
+    return parts.join(', ');
+  }
+
+  async function searchCity(name) {
+    const url =
+      'https://geocoding-api.open-meteo.com/v1/search?name=' +
+      encodeURIComponent(name) +
+      '&count=1&language=hr&format=json';
+    const res = await fetch(url);
+    if (!res.ok) throw new Error('geocode_http_' + res.status);
+    const json = await res.json();
+    const r = json && json.results && json.results[0] ? json.results[0] : null;
+    if (!r) return null;
+    const parts = [r.name, r.admin1, r.country].filter(Boolean);
+    return { lat: r.latitude, lon: r.longitude, place: parts.join(', ') };
+  }
+
+  function renderWeatherSkeleton(container) {
+    container.innerHTML = `
+      <div class="weather-card">
+        <div class="weather-header">
+          <div>
+            <p class="weather-title">Lokacija (vrijeme)</p>
+            <p class="weather-location">Učitavanje…</p>
+          </div>
+          <div class="weather-actions">
+            <button type="button" class="btn btn-ghost weather-btn" disabled>Osvježi</button>
+          </div>
+        </div>
+        <div class="weather-grid">
+          <div class="weather-metric"><div class="label">Temp</div><div class="value">—</div></div>
+          <div class="weather-metric"><div class="label">Vlaga</div><div class="value">—</div></div>
+          <div class="weather-metric"><div class="label">Vjetar</div><div class="value">—</div></div>
+          <div class="weather-metric"><div class="label">Oborine</div><div class="value">—</div></div>
+        </div>
+        <div class="weather-footnote">Podaci: Open‑Meteo</div>
+      </div>
+    `;
+  }
+
+  function renderWeatherError(container, message, showLocationButton) {
+    container.innerHTML = `
+      <div class="weather-card">
+        <div class="weather-header">
+          <div>
+            <p class="weather-title">Lokacija (vrijeme)</p>
+            <p class="weather-location">${escapeHtml(message)}</p>
+          </div>
+          <div class="weather-actions">
+            ${showLocationButton ? '<button type="button" class="btn btn-primary weather-btn" id="weather-enable-location">Omogući lokaciju</button>' : ''}
+            <button type="button" class="btn btn-ghost weather-btn" id="weather-refresh">Osvježi</button>
+          </div>
+        </div>
+        <form class="weather-form" id="weather-city-form">
+          <input type="text" id="weather-city" placeholder="Upiši grad (npr. Zagreb)" autocomplete="address-level2" />
+          <button type="submit" class="btn btn-primary weather-btn">Prikaži</button>
+        </form>
+        <div class="weather-footnote">Podaci: Open‑Meteo</div>
+      </div>
+    `;
+    const refreshBtn = document.getElementById('weather-refresh');
+    if (refreshBtn) refreshBtn.addEventListener('click', () => renderWeatherWidget(true));
+    const enableBtn = document.getElementById('weather-enable-location');
+    if (enableBtn) enableBtn.addEventListener('click', () => renderWeatherWidget(true, true));
+    const form = document.getElementById('weather-city-form');
+    if (form) {
+      form.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const city = document.getElementById('weather-city').value.trim();
+        if (!city) return;
+        renderWeatherSkeleton(container);
+        try {
+          const loc = await searchCity(city);
+          if (!loc) {
+            renderWeatherError(container, 'Grad nije pronađen. Pokušajte ponovno.', showLocationButton);
+            return;
+          }
+          const wx = await fetchWeather(loc.lat, loc.lon);
+          const current = wx && wx.current ? wx.current : null;
+          if (!current) throw new Error('no_current_weather');
+          const payload = { fetchedAt: Date.now(), lat: loc.lat, lon: loc.lon, place: loc.place, current };
+          setWeatherPref({ lat: loc.lat, lon: loc.lon, place: loc.place });
+          setWeatherCache(payload);
+          renderWeatherData(container, payload.place, payload.current, payload.fetchedAt);
+        } catch {
+          renderWeatherError(container, 'Vrijeme trenutno nije dostupno. Pokušajte ponovno.', showLocationButton);
+        }
+      });
+    }
+  }
+
+  function renderWeatherData(container, place, current, fetchedAt) {
+    const temp = fmtNumber(current.temperature_2m, 1) + ' °C';
+    const hum = fmtNumber(current.relative_humidity_2m, 0) + ' %';
+    const wind = fmtNumber(current.wind_speed_10m, 0) + ' km/h';
+    const precip = fmtNumber(current.precipitation, 1) + ' mm';
+    container.innerHTML = `
+      <div class="weather-card">
+        <div class="weather-header">
+          <div>
+            <p class="weather-title">Lokacija (vrijeme)</p>
+            <p class="weather-location">${escapeHtml(place || 'Vaša lokacija')}</p>
+          </div>
+          <div class="weather-actions">
+            <button type="button" class="btn btn-ghost weather-btn" id="weather-refresh">Osvježi</button>
+          </div>
+        </div>
+        <div class="weather-grid">
+          <div class="weather-metric"><div class="label">Temp</div><div class="value">${temp}</div></div>
+          <div class="weather-metric"><div class="label">Vlaga</div><div class="value">${hum}</div></div>
+          <div class="weather-metric"><div class="label">Vjetar</div><div class="value">${wind}</div></div>
+          <div class="weather-metric"><div class="label">Oborine</div><div class="value">${precip}</div></div>
+        </div>
+        <form class="weather-form" id="weather-city-form">
+          <input type="text" id="weather-city" placeholder="Upiši drugi grad (npr. Split)" autocomplete="address-level2" />
+          <button type="submit" class="btn btn-ghost weather-btn">Promijeni</button>
+        </form>
+        <div class="weather-footnote">Ažurirano: ${new Date(fetchedAt).toLocaleTimeString('hr-HR', { hour: '2-digit', minute: '2-digit' })} · Podaci: Open‑Meteo</div>
+      </div>
+    `;
+    const refreshBtn = document.getElementById('weather-refresh');
+    if (refreshBtn) refreshBtn.addEventListener('click', () => renderWeatherWidget(true));
+    const form = document.getElementById('weather-city-form');
+    if (form) {
+      form.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const city = document.getElementById('weather-city').value.trim();
+        if (!city) return;
+        const host = document.getElementById('dashboard-weather');
+        if (!host) return;
+        renderWeatherSkeleton(host);
+        try {
+          const loc = await searchCity(city);
+          if (!loc) {
+            renderWeatherError(host, 'Grad nije pronađen. Pokušajte ponovno.', true);
+            return;
+          }
+          const wx = await fetchWeather(loc.lat, loc.lon);
+          const curr = wx && wx.current ? wx.current : null;
+          if (!curr) throw new Error('no_current_weather');
+          const payload = { fetchedAt: Date.now(), lat: loc.lat, lon: loc.lon, place: loc.place, current: curr };
+          setWeatherPref({ lat: loc.lat, lon: loc.lon, place: loc.place });
+          setWeatherCache(payload);
+          renderWeatherData(host, payload.place, payload.current, payload.fetchedAt);
+        } catch {
+          renderWeatherError(host, 'Vrijeme trenutno nije dostupno. Pokušajte ponovno.', true);
+        }
+      });
+    }
+  }
+
+  async function renderWeatherWidget(force = false, forcePrompt = false) {
+    const host = document.getElementById('dashboard-weather');
+    if (!host) return;
+
+    const cached = getWeatherCache();
+    const fresh = cached && Date.now() - (cached.fetchedAt || 0) < WEATHER_CACHE_MS;
+    if (!force && fresh && cached.current) {
+      renderWeatherData(host, cached.place, cached.current, cached.fetchedAt);
+      return;
+    }
+
+    renderWeatherSkeleton(host);
+
+    try {
+      const pref = !forcePrompt ? getWeatherPref() : null;
+      let lat;
+      let lon;
+      if (pref && pref.lat && pref.lon) {
+        lat = pref.lat;
+        lon = pref.lon;
+      } else {
+        const pos = await getCurrentPositionPromise(9000);
+        lat = pos.coords.latitude;
+        lon = pos.coords.longitude;
+      }
+      const [wx, place] = await Promise.all([fetchWeather(lat, lon), fetchPlaceName(lat, lon)]);
+      const current = wx && wx.current ? wx.current : null;
+      if (!current) throw new Error('no_current_weather');
+      const payload = { fetchedAt: Date.now(), lat, lon, place: (pref && pref.place) || place || null, current };
+      setWeatherCache(payload);
+      renderWeatherData(host, payload.place, payload.current, payload.fetchedAt);
+    } catch (err) {
+      const code = err && (err.code || err.message) ? String(err.code || err.message) : 'error';
+      const isDenied = code.includes('1') || code.toLowerCase().includes('denied') || code.toLowerCase().includes('permission');
+      renderWeatherError(
+        host,
+        isDenied
+          ? 'Lokacija nije dopuštena. Omogućite lokaciju za prikaz vremena.'
+          : 'Vrijeme trenutno nije dostupno. Pokušajte ponovno.',
+        isDenied
+      );
+    }
   }
 
   function escapeHtml(s) {
@@ -789,7 +1078,7 @@
       const el = document.getElementById(id);
       if (el && !el.value) el.value = today;
     });
-    if (tool === 'watering') fillToolboxPlantSelect();
+    if (tool === 'watering' || tool === 'feeding' || tool === 'environment' || tool === 'transplant' || tool === 'stressors') fillToolboxPlantSelects();
     if (tool === 'graphs') {
       renderToolboxChart('watering', document.getElementById('overview-chart-watering'));
       renderToolboxChart('environment', document.getElementById('overview-chart-environment'));
@@ -801,11 +1090,25 @@
   }
 
   function fillToolboxPlantSelect() {
-    const sel = document.getElementById('tool-watering-value2');
-    if (!sel) return;
+    // Back-compat: keep old function name, but fill all tool selects.
+    fillToolboxPlantSelects();
+  }
+
+  function fillToolboxPlantSelects() {
     const plants = getPlants();
-    const first = sel.options[0] ? sel.options[0].outerHTML : '<option value="">— Sve —</option>';
-    sel.innerHTML = first + plants.map((p) => '<option value="' + p.id + '">' + escapeHtml(p.name) + '</option>').join('');
+    const options = plants.map((p) => '<option value="' + p.id + '">' + escapeHtml(p.name) + '</option>').join('');
+    ['tool-watering-value2', 'tool-feeding-plant', 'tool-environment-plant', 'tool-transplant-plant', 'tool-stressors-plant'].forEach((id) => {
+      const sel = document.getElementById(id);
+      if (!sel) return;
+      const first = sel.options[0] ? sel.options[0].outerHTML : '<option value="">-- Odaberi biljku --</option>';
+      sel.innerHTML = first + options;
+    });
+
+    const graphsSel = document.getElementById('tool-graphs-plant');
+    if (graphsSel) {
+      const first = graphsSel.options[0] ? graphsSel.options[0].outerHTML : '<option value="">Sve biljke</option>';
+      graphsSel.innerHTML = first + options;
+    }
   }
 
   function renderToolbox() {
@@ -813,7 +1116,7 @@
       p.classList.remove('open');
       p.setAttribute('aria-hidden', 'true');
     });
-    fillToolboxPlantSelect();
+    fillToolboxPlantSelects();
   }
 
   function renderToolboxList(tool) {
@@ -825,20 +1128,38 @@
       listEl.innerHTML = '<p class="toolbox-empty">Nema unosa. Dodajte prvi.</p>';
       return;
     }
+    const plants = getPlants();
+    const plantById = new Map(plants.map((p) => [p.id, p.name]));
+    const plantLabel = (plantId) => {
+      if (!plantId) return '—';
+      return plantById.get(plantId) || 'Biljka';
+    };
     listEl.innerHTML = data
       .map((item) => {
         let valuesStr;
-        if (tool === 'environment') {
+        if (tool === 'watering') {
+          const val = escapeHtml(String(item.value1 || ''));
+          valuesStr = val + ' mL · ' + escapeHtml(plantLabel(item.value2 || item.plantId));
+        } else if (tool === 'feeding') {
+          const parts = [];
+          if (item.value1) parts.push(escapeHtml(String(item.value1)));
+          if (item.value2) parts.push(escapeHtml(String(item.value2)));
+          parts.push(escapeHtml(plantLabel(item.plantId)));
+          valuesStr = parts.join(' · ');
+        } else if (tool === 'environment') {
           valuesStr =
             escapeHtml(String(item.value1 || '')) +
             ' °C' +
             (item.value2 ? ' · ' + escapeHtml(String(item.value2)) + ' %' : '') +
-            (item.value3 ? ' · pH ' + escapeHtml(String(item.value3)) : '');
+            (item.value3 ? ' · pH ' + escapeHtml(String(item.value3)) : '') +
+            ' · ' +
+            escapeHtml(plantLabel(item.plantId));
         } else if (tool === 'transplant') {
           const parts = [];
           if (item.soilQuality) parts.push('Kvaliteta zemlje: ' + escapeHtml(String(item.soilQuality)));
           if (item.plantAge) parts.push('Starost: ' + escapeHtml(String(item.plantAge)));
           if (item.plantCondition) parts.push('Stanje: ' + escapeHtml(String(item.plantCondition)));
+          parts.push('Biljka: ' + escapeHtml(plantLabel(item.plantId)));
           valuesStr = parts.join(' · ') || '-';
         } else if (tool === 'stressors') {
           const parts = [];
@@ -846,6 +1167,7 @@
           if (item.humidity) parts.push('Vlaga: ' + escapeHtml(String(item.humidity)));
           if (item.vpd) parts.push('VPD: ' + escapeHtml(String(item.vpd)));
           if (item.pests) parts.push('Nametnici: ' + escapeHtml(String(item.pests)));
+          parts.push('Biljka: ' + escapeHtml(plantLabel(item.plantId)));
           valuesStr = parts.join(' · ') || '-';
         } else {
           valuesStr = escapeHtml(String(item.value1 || '')) + (item.value2 ? ' · ' + escapeHtml(String(item.value2)) : '');
@@ -874,10 +1196,28 @@
     });
   }
 
-  function renderToolboxChart(tool, container) {
+  function resolveToolboxChartPlantId(tool, container) {
+    if (!container) return null;
+    const id = container.id || '';
+    if (id === 'toolbox-chart-watering') return document.getElementById('tool-watering-value2')?.value || null;
+    if (id === 'toolbox-chart-environment') return document.getElementById('tool-environment-plant')?.value || null;
+    if (id === 'overview-chart-watering' || id === 'overview-chart-environment') return document.getElementById('tool-graphs-plant')?.value || null;
+    // dashboard charts remain unfiltered
+    return null;
+  }
+
+  function renderToolboxChart(tool, container, plantId) {
     if (!container) return;
     const data = getToolboxData()[tool] || [];
-    const sorted = [...data].sort((a, b) => (a.date || '').localeCompare(b.date || ''));
+    const selectedPlantId = plantId !== undefined ? plantId : resolveToolboxChartPlantId(tool, container);
+    const sortedAll = [...data].sort((a, b) => (a.date || '').localeCompare(b.date || ''));
+    const sorted = selectedPlantId
+      ? sortedAll.filter((x) => {
+          const pid = tool === 'watering' ? x.value2 || x.plantId : x.plantId;
+          return pid === selectedPlantId;
+        })
+      : sortedAll;
+
     if (sorted.length === 0) {
       container.innerHTML = '<p class="toolbox-chart-empty">Nema podataka za graf.</p>';
       return;
@@ -955,6 +1295,30 @@
     btn.addEventListener('click', () => openToolboxPanel(btn.dataset.tool));
   });
 
+  const wateringPlantSel = document.getElementById('tool-watering-value2');
+  if (wateringPlantSel) {
+    wateringPlantSel.addEventListener('change', () => {
+      renderToolboxList('watering');
+      renderToolboxChart('watering', document.getElementById('toolbox-chart-watering'));
+    });
+  }
+
+  const envPlantSel = document.getElementById('tool-environment-plant');
+  if (envPlantSel) {
+    envPlantSel.addEventListener('change', () => {
+      renderToolboxList('environment');
+      renderToolboxChart('environment', document.getElementById('toolbox-chart-environment'));
+    });
+  }
+
+  const graphsPlantSel = document.getElementById('tool-graphs-plant');
+  if (graphsPlantSel) {
+    graphsPlantSel.addEventListener('change', () => {
+      renderToolboxChart('watering', document.getElementById('overview-chart-watering'));
+      renderToolboxChart('environment', document.getElementById('overview-chart-environment'));
+    });
+  }
+
   document.getElementById('toolbox-form-watering').addEventListener('submit', (e) => {
     e.preventDefault();
     const data = getToolboxData();
@@ -978,6 +1342,7 @@
       date: document.getElementById('tool-feeding-date').value,
       value1: document.getElementById('tool-feeding-value1').value.trim(),
       value2: document.getElementById('tool-feeding-value2').value.trim() || null,
+      plantId: document.getElementById('tool-feeding-plant').value.trim() || null,
     });
     setToolboxData(data);
     document.getElementById('toolbox-form-feeding').reset();
@@ -994,6 +1359,7 @@
       value1: document.getElementById('tool-environment-value1').value.trim(),
       value2: document.getElementById('tool-environment-value2').value.trim() || null,
       value3: document.getElementById('tool-environment-value3').value.trim() || null,
+      plantId: document.getElementById('tool-environment-plant').value.trim() || null,
     });
     setToolboxData(data);
     document.getElementById('toolbox-form-environment').reset();
@@ -1012,6 +1378,7 @@
         soilQuality: document.getElementById('tool-transplant-soil').value.trim() || null,
         plantAge: document.getElementById('tool-transplant-age').value.trim() || null,
         plantCondition: document.getElementById('tool-transplant-condition').value.trim() || null,
+        plantId: document.getElementById('tool-transplant-plant').value.trim() || null,
       });
       setToolboxData(data);
       document.getElementById('toolbox-form-transplant').reset();
@@ -1031,6 +1398,7 @@
         humidity: document.getElementById('tool-stressors-humidity').value.trim() || null,
         vpd: document.getElementById('tool-stressors-vpd').value.trim() || null,
         pests: document.getElementById('tool-stressors-pests').value.trim() || null,
+        plantId: document.getElementById('tool-stressors-plant').value.trim() || null,
       });
       setToolboxData(data);
       document.getElementById('toolbox-form-stressors').reset();
