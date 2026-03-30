@@ -8,6 +8,32 @@
   const STORAGE_PLANTS = 'balpha-shop-plants';
   const STORAGE_ENTRIES = 'balpha-shop-entries';
 
+  // One-time migration from previous storage keys (older branding).
+  (function migrateOldStorageKeys() {
+    const flagKey = 'balpha-shop-migrated-v1';
+    if (localStorage.getItem(flagKey)) return;
+    const pairs = [
+      ['balkan-pharm-plants', STORAGE_PLANTS],
+      ['balkan-pharm-entries', STORAGE_ENTRIES],
+      ['balkan-pharm-toolbox', 'balpha-shop-toolbox'],
+      ['balkan-pharm-auth', STORAGE_AUTH],
+    ];
+    pairs.forEach(([oldKey, newKey]) => {
+      try {
+        const hasNew = localStorage.getItem(newKey);
+        const oldVal = localStorage.getItem(oldKey);
+        if (!hasNew && oldVal) localStorage.setItem(newKey, oldVal);
+      } catch {
+        // ignore
+      }
+    });
+    try {
+      localStorage.setItem(flagKey, String(Date.now()));
+    } catch {
+      // ignore
+    }
+  })();
+
   const STAGES = {
     klijanje: 'Klijanje',
     sadnica: 'Sadnica',
@@ -687,6 +713,7 @@
     renderDashboard();
     fillEntryPlantSelect();
     fillJournalPlantFilter();
+    if (typeof fillToolboxPlantSelects === 'function') fillToolboxPlantSelects();
   }
 
   function openPlantModal(editId) {
@@ -798,6 +825,7 @@
     renderDashboard();
     fillEntryPlantSelect();
     fillJournalPlantFilter();
+    if (typeof fillToolboxPlantSelects === 'function') fillToolboxPlantSelects();
   });
 
   document.querySelector('#modal-plant .modal-close').addEventListener('click', closePlantModal);
