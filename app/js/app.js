@@ -115,6 +115,7 @@
     if (id === 'plants') {
       renderPlants();
       renderJournal();
+      renderWeatherWidgets();
     }
     if (id === 'toolbox') renderToolbox();
   }
@@ -326,7 +327,7 @@
       }
     }
 
-    renderWeatherWidget();
+    renderWeatherWidgets();
   }
 
   const WEATHER_CACHE_KEY = 'balpha-shop-weather-cache';
@@ -482,9 +483,9 @@
       </div>
     `;
     const refreshBtn = document.getElementById('weather-refresh');
-    if (refreshBtn) refreshBtn.addEventListener('click', () => renderWeatherWidget(true));
+    if (refreshBtn) refreshBtn.addEventListener('click', () => renderWeatherWidgets(true));
     const enableBtn = document.getElementById('weather-enable-location');
-    if (enableBtn) enableBtn.addEventListener('click', () => renderWeatherWidget(true, true));
+    if (enableBtn) enableBtn.addEventListener('click', () => renderWeatherWidgets(true, true));
     const form = document.getElementById('weather-city-form');
     if (form) {
       form.addEventListener('submit', async (e) => {
@@ -542,20 +543,20 @@
       </div>
     `;
     const refreshBtn = document.getElementById('weather-refresh');
-    if (refreshBtn) refreshBtn.addEventListener('click', () => renderWeatherWidget(true));
+    if (refreshBtn) refreshBtn.addEventListener('click', () => renderWeatherWidgets(true));
     const form = document.getElementById('weather-city-form');
     if (form) {
       form.addEventListener('submit', async (e) => {
         e.preventDefault();
         const city = document.getElementById('weather-city').value.trim();
         if (!city) return;
-        const host = document.getElementById('dashboard-weather');
-        if (!host) return;
-        renderWeatherSkeleton(host);
+        const hosts = getWeatherHosts();
+        if (!hosts.length) return;
+        hosts.forEach(renderWeatherSkeleton);
         try {
           const loc = await searchCity(city);
           if (!loc) {
-            renderWeatherError(host, 'Grad nije pronađen. Pokušajte ponovno.', true);
+            hosts.forEach((h) => renderWeatherError(h, 'Grad nije pronađen. Pokušajte ponovno.', true));
             return;
           }
           const wx = await fetchWeather(loc.lat, loc.lon);
@@ -564,16 +565,19 @@
           const payload = { fetchedAt: Date.now(), lat: loc.lat, lon: loc.lon, place: loc.place, current: curr };
           setWeatherPref({ lat: loc.lat, lon: loc.lon, place: loc.place });
           setWeatherCache(payload);
-          renderWeatherData(host, payload.place, payload.current, payload.fetchedAt);
+          hosts.forEach((h) => renderWeatherData(h, payload.place, payload.current, payload.fetchedAt));
         } catch {
-          renderWeatherError(host, 'Vrijeme trenutno nije dostupno. Pokušajte ponovno.', true);
+          hosts.forEach((h) => renderWeatherError(h, 'Vrijeme trenutno nije dostupno. Pokušajte ponovno.', true));
         }
       });
     }
   }
 
-  async function renderWeatherWidget(force = false, forcePrompt = false) {
-    const host = document.getElementById('dashboard-weather');
+  function getWeatherHosts() {
+    return [document.getElementById('dashboard-weather'), document.getElementById('plants-weather')].filter(Boolean);
+  }
+
+  async function renderWeatherWidgetInto(host, force = false, forcePrompt = false) {
     if (!host) return;
 
     const cached = getWeatherCache();
@@ -614,6 +618,12 @@
         isDenied
       );
     }
+  }
+
+  function renderWeatherWidgets(force = false, forcePrompt = false) {
+    getWeatherHosts().forEach((h) => {
+      renderWeatherWidgetInto(h, force, forcePrompt);
+    });
   }
 
   function escapeHtml(s) {
