@@ -241,11 +241,12 @@
     const entries = getEntries();
     const cardsEl = document.getElementById('dashboard-cards');
     const recentEl = document.getElementById('recent-notes');
+    const totalPlantCount = plants.reduce((sum, p) => sum + Math.max(1, Number(p.count || 1)), 0);
 
     cardsEl.innerHTML = `
       <div class="dashboard-card">
         <h3>Broj biljaka</h3>
-        <div class="value">${plants.length}</div>
+        <div class="value">${totalPlantCount}</div>
       </div>
       <div class="dashboard-card">
         <h3>Bilješke u dnevniku</h3>
@@ -364,6 +365,7 @@
           <span class="stage-badge">${STAGES[p.stage] || p.stage}</span>
         </div>
         ${p.strain ? `<div class="strain">${escapeHtml(p.strain)}</div>` : ''}
+        <div class="text-muted" style="font-size:0.85rem">Nasad: <strong style="color:var(--text)">${Math.max(1, Number(p.count || 1))}</strong> bilj.</div>
         ${p.startDate ? `<div class="text-muted" style="font-size:0.85rem">Od ${new Date(p.startDate).toLocaleDateString('hr-HR')}</div>` : ''}
         <div class="plant-card-actions">
           <button type="button" class="btn btn-primary btn-growlog">Growlog</button>
@@ -412,6 +414,7 @@
       if (p) {
         document.getElementById('plant-name').value = p.name;
         document.getElementById('plant-strain').value = p.strain || '';
+        document.getElementById('plant-count').value = p.count ?? 1;
         document.getElementById('plant-stage').value = p.stage || 'klijanje';
         document.getElementById('plant-start-date').value = p.startDate || '';
         document.getElementById('plant-environment-name').value = p.environmentName || '';
@@ -433,6 +436,7 @@
     } else {
       form.reset();
       document.getElementById('plant-id').value = '';
+      document.getElementById('plant-count').value = 1;
       document.getElementById('plant-stage').value = 'klijanje';
       photoData.value = '';
       photoPreview.innerHTML = '';
@@ -476,10 +480,13 @@
     const plants = getPlants();
     const photoData = document.getElementById('plant-photo-data').value.trim();
     const exposureVal = document.getElementById('plant-exposure-hours').value.trim();
+    const countVal = document.getElementById('plant-count').value.trim();
+    const countNum = Math.max(1, parseInt(countVal || '1', 10) || 1);
     const payload = {
       id: id || uuid(),
       name: document.getElementById('plant-name').value.trim(),
       strain: document.getElementById('plant-strain').value.trim(),
+      count: countNum,
       stage: document.getElementById('plant-stage').value,
       startDate: document.getElementById('plant-start-date').value || null,
       environmentName: document.getElementById('plant-environment-name').value.trim() || null,
