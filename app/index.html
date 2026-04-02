@@ -137,6 +137,8 @@
             <section class="growlog-section">
               <h3 class="growlog-section-title">Faze uzgoja</h3>
               <div class="tree-stages" id="growlog-tree-stages"></div>
+              <h4 class="growlog-subsection-title">Podfaze (lonci)</h4>
+              <div class="tree-stages tree-subphases" id="growlog-subphases"></div>
               <h4 class="growlog-subsection-title">Povijest prijelaza</h4>
               <div class="stage-history-list" id="growlog-stage-history"></div>
             </section>
@@ -299,6 +301,16 @@
             <option value="vegetativna">Vegetativna</option>
             <option value="cvjetanje">Cvjetanje</option>
             <option value="susenje">Sušenje</option>
+          </select>
+        </label>
+        <label>
+          Podfaza (volumen lonca)
+          <select id="plant-subphase">
+            <option value="">— nije odabrano —</option>
+            <option value="pot_10dcl">10 dcl</option>
+            <option value="pot_1_5l">1,5 L</option>
+            <option value="pot_5l">5 L</option>
+            <option value="pot_30l">30 L</option>
           </select>
         </label>
         <div class="plant-stage-transition-block">

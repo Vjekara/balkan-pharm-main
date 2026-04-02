@@ -42,6 +42,20 @@
     susenje: 'Sušenje',
   };
 
+  const SUBPHASE_POTS = {
+    pot_10dcl: '10 dcl',
+    pot_1_5l: '1,5 L',
+    pot_5l: '5 L',
+    pot_30l: '30 L',
+  };
+
+  const SUBPHASE_ORDER = ['pot_10dcl', 'pot_1_5l', 'pot_5l', 'pot_30l'];
+
+  function subphaseLabel(key) {
+    if (!key) return '';
+    return SUBPHASE_POTS[key] || key;
+  }
+
   const ENTRY_TYPE_LABELS = {
     opcenito: 'Općenito',
     zalijevanje: 'Zalijevanje',
@@ -244,6 +258,21 @@
       })
       .join('');
 
+    const subPhEl = document.getElementById('growlog-subphases');
+    if (subPhEl) {
+      subPhEl.innerHTML = SUBPHASE_ORDER.map((k) => {
+        const isCurrent = plant.subphase === k;
+        const label = SUBPHASE_POTS[k];
+        return (
+          '<div class="tree-stage-item tree-subphase-item' +
+          (isCurrent ? ' current' : '') +
+          '"><span class="tree-stage-icon">🫙</span><span class="tree-stage-label">' +
+          label +
+          '</span></div>'
+        );
+      }).join('');
+    }
+
     const histEl = document.getElementById('growlog-stage-history');
     if (histEl) {
       const hist = plant.stageHistory || [];
@@ -429,6 +458,11 @@
           <h3>${escapeHtml(p.name)}</h3>
           <span class="stage-badge">${STAGES[p.stage] || p.stage}</span>
         </div>
+        ${
+          p.subphase
+            ? `<div class="plant-card-subphases"><span class="subphase-badge" title="Volumen lonca">${escapeHtml(subphaseLabel(p.subphase))}</span></div>`
+            : ''
+        }
         ${p.strain ? `<div class="strain">${escapeHtml(p.strain)}</div>` : ''}
         <div class="text-muted" style="font-size:0.85rem">Nasad: <strong style="color:var(--text)">${Math.max(1, Number(p.count || 1))}</strong> bilj.</div>
         ${p.startDate ? `<div class="text-muted" style="font-size:0.85rem">Od ${new Date(p.startDate).toLocaleDateString('hr-HR')}</div>` : ''}
@@ -499,6 +533,8 @@
         document.getElementById('plant-strain').value = p.strain || '';
         document.getElementById('plant-count').value = p.count ?? 1;
         document.getElementById('plant-stage').value = p.stage || 'klijanje';
+        const subSel = document.getElementById('plant-subphase');
+        if (subSel) subSel.value = p.subphase && SUBPHASE_POTS[p.subphase] ? p.subphase : '';
         document.getElementById('plant-start-date').value = p.startDate || '';
         document.getElementById('plant-environment-name').value = p.environmentName || '';
         document.getElementById('plant-environment-type').value = p.environmentType || 'indoor';
@@ -521,6 +557,8 @@
       document.getElementById('plant-id').value = '';
       document.getElementById('plant-count').value = 1;
       document.getElementById('plant-stage').value = 'klijanje';
+      const subSelNew = document.getElementById('plant-subphase');
+      if (subSelNew) subSelNew.value = '';
       photoData.value = '';
       photoPreview.innerHTML = '';
     }
@@ -620,6 +658,12 @@
       strain: document.getElementById('plant-strain').value.trim(),
       count: countNum,
       stage: newStage,
+      subphase:
+        (() => {
+          const v = document.getElementById('plant-subphase');
+          const raw = v && v.value ? v.value.trim() : '';
+          return raw && SUBPHASE_POTS[raw] ? raw : null;
+        })(),
       startDate: startDateVal,
       environmentName: document.getElementById('plant-environment-name').value.trim() || null,
       environmentType: document.getElementById('plant-environment-type').value || 'indoor',

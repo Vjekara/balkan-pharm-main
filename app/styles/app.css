@@ -379,6 +379,21 @@ body {
   color: #06201a;
 }
 
+.plant-card-subphases {
+  margin: -0.35rem 0 0.5rem;
+}
+
+.plant-card .subphase-badge {
+  display: inline-block;
+  padding: 0.2rem 0.5rem;
+  border-radius: 6px;
+  font-size: 0.72rem;
+  font-weight: 600;
+  background: rgba(45, 212, 191, 0.12);
+  border: 1px solid rgba(45, 212, 191, 0.35);
+  color: var(--accent-bright);
+}
+
 .plant-card-actions {
   display: flex;
   gap: 0.5rem;
@@ -1121,6 +1136,18 @@ body {
   background: rgba(45, 212, 191, 0.08);
   margin-left: -0.5rem;
   padding-left: 1rem;
+}
+
+.tree-subphases .tree-subphase-item {
+  opacity: 0.55;
+}
+
+.tree-subphases .tree-subphase-item.current {
+  opacity: 1;
+}
+
+.tree-subphases .tree-stage-icon {
+  font-size: 0.95rem;
 }
 
 .tree-stage-icon {
