@@ -730,6 +730,13 @@
     const modal = document.getElementById('modal-plant');
     const form = document.getElementById('form-plant');
     const titleEl = document.getElementById('modal-plant-title');
+    const startDateInput = document.getElementById('plant-start-date');
+    if (startDateInput) {
+      startDateInput.removeAttribute('min');
+      startDateInput.removeAttribute('max');
+      startDateInput.min = '';
+      startDateInput.max = '';
+    }
     const photoData = document.getElementById('plant-photo-data');
     const photoPreview = document.getElementById('plant-photo-preview');
     document.getElementById('plant-id').value = editId || '';
