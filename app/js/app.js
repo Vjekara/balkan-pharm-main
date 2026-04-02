@@ -42,6 +42,17 @@
     susenje: 'Sušenje',
   };
 
+  const ENTRY_TYPE_LABELS = {
+    opcenito: 'Općenito',
+    zalijevanje: 'Zalijevanje',
+    gnojidba: 'Gnojidba',
+    okolis: 'Okoliš',
+    presadjivanje: 'Presađivanje',
+    stresori: 'Stresori',
+    ostalo: 'Ostalo',
+    faza: 'Faza (prijelaz)',
+  };
+
   function getPlants() {
     try {
       const data = localStorage.getItem(STORAGE_PLANTS);
@@ -70,6 +81,14 @@
 
   function uuid() {
     return 'id-' + Date.now() + '-' + Math.random().toString(36).slice(2, 9);
+  }
+
+  function localDateYYYYMMDD() {
+    const d = new Date();
+    const y = d.getFullYear();
+    const m = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    return y + '-' + m + '-' + day;
   }
 
   // --- Navigation ---
@@ -225,6 +244,26 @@
       })
       .join('');
 
+    const histEl = document.getElementById('growlog-stage-history');
+    if (histEl) {
+      const hist = plant.stageHistory || [];
+      if (hist.length === 0) {
+        histEl.innerHTML = '<p class="growlog-empty">Još nema zapisanih prijelaza. Mijenjaj fazu u &quot;Uredi biljku&quot; — nastaje bilješka u dnevniku.</p>';
+      } else {
+        histEl.innerHTML = hist
+          .slice()
+          .reverse()
+          .map((h) => {
+            const d = h.date ? new Date(h.date).toLocaleDateString('hr-HR', { day: 'numeric', month: 'short', year: 'numeric' }) : '—';
+            const line = h.from
+              ? escapeHtml(STAGES[h.from] || h.from) + ' → ' + escapeHtml(STAGES[h.to] || h.to)
+              : 'Započetak: ' + escapeHtml(STAGES[h.to] || h.to);
+            return '<div class="stage-history-item"><span class="stage-history-date">' + d + '</span><span class="stage-history-label">' + line + '</span></div>';
+          })
+          .join('');
+      }
+    }
+
     document.getElementById('growlog-environment').innerHTML = `
       <div class="env-row"><span class="env-icon">⛺</span> ${escapeHtml(plant.environmentName || '—')}</div>
       <div class="env-row"><span class="env-icon">💡</span> ${envType}</div>
@@ -242,7 +281,7 @@
     entries.slice(0, 20).forEach((e) => {
       const dayWeek = formatDayWeek(e.date, startDate);
       const dateStr = e.date ? new Date(e.date).toLocaleDateString('hr-HR', { day: 'numeric', month: 'short', year: '2-digit' }) : '';
-      const typeLabel = e.type || 'Općenito';
+      const typeLabel = ENTRY_TYPE_LABELS[e.type] || e.type || 'Općenito';
       const note = (e.note || '').slice(0, 80) + ((e.note || '').length > 80 ? '…' : '');
       const media = e.photo ? '<img src="' + e.photo + '" alt="" class="timeline-thumb" />' : '';
       timelineItems.push(
@@ -440,6 +479,16 @@
     }
     const photoData = document.getElementById('plant-photo-data');
     const photoPreview = document.getElementById('plant-photo-preview');
+    const transDate = document.getElementById('plant-stage-transition-date');
+    const transNote = document.getElementById('plant-stage-transition-note');
+    if (transDate) {
+      transDate.removeAttribute('min');
+      transDate.removeAttribute('max');
+      transDate.min = '';
+      transDate.max = '';
+      transDate.value = localDateYYYYMMDD();
+    }
+    if (transNote) transNote.value = '';
     document.getElementById('plant-id').value = editId || '';
     titleEl.textContent = editId ? 'Uredi biljku' : 'Nova biljka';
     document.getElementById('plant-photo').value = '';
@@ -512,24 +561,75 @@
     e.preventDefault();
     const id = document.getElementById('plant-id').value;
     const plants = getPlants();
+    const prev = id ? plants.find((p) => p.id === id) : null;
     const photoData = document.getElementById('plant-photo-data').value.trim();
     const exposureVal = document.getElementById('plant-exposure-hours').value.trim();
     const countVal = document.getElementById('plant-count').value.trim();
     const countNum = Math.max(1, parseInt(countVal || '1', 10) || 1);
+    const newId = id || uuid();
+    const newStage = document.getElementById('plant-stage').value;
+    const startDateVal = document.getElementById('plant-start-date').value || null;
+    const transDateEl = document.getElementById('plant-stage-transition-date');
+    const transNoteEl = document.getElementById('plant-stage-transition-note');
+    const transitionNote = transNoteEl ? transNoteEl.value.trim() : '';
+
+    let stageHistory = [];
+    let stageDates = {};
+    if (prev) {
+      stageHistory = Array.isArray(prev.stageHistory) ? prev.stageHistory.slice() : [];
+      stageDates = prev.stageDates && typeof prev.stageDates === 'object' ? { ...prev.stageDates } : {};
+    }
+
+    const journalAdds = [];
+
+    if (!id) {
+      const day0 = startDateVal || localDateYYYYMMDD();
+      stageHistory.push({ from: null, to: newStage, date: day0 });
+      stageDates[newStage] = day0;
+      let note0 = 'Započet uzgoj — faza: ' + (STAGES[newStage] || newStage);
+      if (transitionNote) note0 += '. ' + transitionNote;
+      journalAdds.push({
+        id: uuid(),
+        plantId: newId,
+        date: day0,
+        type: 'faza',
+        note: note0,
+        photo: photoData || null,
+        meta: { faza: { from: null, to: newStage } },
+      });
+    } else if (prev && prev.stage !== newStage) {
+      const td = (transDateEl && transDateEl.value) || localDateYYYYMMDD();
+      stageHistory.push({ from: prev.stage, to: newStage, date: td });
+      stageDates[newStage] = td;
+      const base = 'Prijelaz faze: ' + (STAGES[prev.stage] || prev.stage) + ' → ' + (STAGES[newStage] || newStage);
+      const note1 = transitionNote ? base + '. ' + transitionNote : base;
+      journalAdds.push({
+        id: uuid(),
+        plantId: newId,
+        date: td,
+        type: 'faza',
+        note: note1,
+        photo: photoData || null,
+        meta: { faza: { from: prev.stage, to: newStage } },
+      });
+    }
+
     const payload = {
-      id: id || uuid(),
+      id: newId,
       name: document.getElementById('plant-name').value.trim(),
       strain: document.getElementById('plant-strain').value.trim(),
       count: countNum,
-      stage: document.getElementById('plant-stage').value,
-      startDate: document.getElementById('plant-start-date').value || null,
+      stage: newStage,
+      startDate: startDateVal,
       environmentName: document.getElementById('plant-environment-name').value.trim() || null,
       environmentType: document.getElementById('plant-environment-type').value || 'indoor',
       exposureHours: exposureVal ? parseInt(exposureVal, 10) : null,
       notes: document.getElementById('plant-notes').value.trim(),
       photo: photoData || null,
       updatedAt: new Date().toISOString(),
-      views: (getPlants().find((p) => p.id === id) || {}).views ?? 0,
+      views: (prev || {}).views ?? 0,
+      stageHistory,
+      stageDates,
     };
     let next;
     if (id) {
@@ -538,12 +638,17 @@
       next = [...plants, payload];
     }
     setPlants(next);
+    if (journalAdds.length) {
+      setEntries(getEntries().concat(journalAdds));
+    }
     closePlantModal();
     renderPlants();
     renderDashboard();
+    renderJournal();
     fillEntryPlantSelect();
     fillJournalPlantFilter();
     if (typeof fillToolboxPlantSelects === 'function') fillToolboxPlantSelects();
+    if (currentGrowlogPlantId === newId) renderGrowlog(newId);
   });
 
   document.querySelector('#modal-plant .modal-close').addEventListener('click', closePlantModal);
@@ -563,16 +668,6 @@
     const plants = getPlants();
     sel.innerHTML = '<option value="">Sve biljke</option>' + plants.map((p) => `<option value="${p.id}">${escapeHtml(p.name)}</option>`).join('');
   }
-
-  const ENTRY_TYPE_LABELS = {
-    opcenito: 'Općenito',
-    zalijevanje: 'Zalijevanje',
-    gnojidba: 'Gnojidba',
-    okolis: 'Okoliš',
-    presadjivanje: 'Presađivanje',
-    stresori: 'Stresori',
-    ostalo: 'Ostalo',
-  };
 
   function updateEntryExtraVisibility() {
     const type = document.getElementById('entry-type').value;
@@ -614,6 +709,13 @@
         if (e.video) media.push('<div class="entry-media entry-video"><video src="' + e.video + '" controls></video></div>');
         let metaHtml = '';
         if (e.meta) {
+          if (e.meta.faza) {
+            const m = e.meta.faza;
+            const parts = [];
+            if (m.from) parts.push('Od: ' + escapeHtml(STAGES[m.from] || m.from));
+            parts.push('U: ' + escapeHtml(STAGES[m.to] || m.to));
+            if (parts.length) metaHtml += '<div class="entry-meta-block"><strong>Prijelaz faze</strong><ul><li>' + parts.join('</li><li>') + '</li></ul></div>';
+          }
           if (e.meta.presadjivanje) {
             const m = e.meta.presadjivanje;
             const parts = [];

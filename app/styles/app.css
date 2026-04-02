@@ -1138,6 +1138,56 @@ body {
   color: var(--text-muted);
 }
 
+.growlog-subsection-title {
+  margin: 1rem 0 0.5rem;
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.stage-history-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+  font-size: 0.85rem;
+}
+
+.stage-history-item {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  padding: 0.5rem 0.6rem;
+  background: rgba(15, 23, 42, 0.35);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+}
+
+.stage-history-date {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+}
+
+.stage-history-label {
+  color: var(--text);
+  line-height: 1.35;
+}
+
+.plant-stage-transition-block {
+  margin: 0.25rem 0 0.5rem;
+  padding: 0.75rem 0;
+  border-top: 1px dashed var(--border);
+  border-bottom: 1px dashed var(--border);
+}
+
+.field-hint {
+  margin: 0 0 0.75rem;
+  font-size: 0.82rem;
+  line-height: 1.45;
+  color: var(--text-muted);
+}
+
 .growlog-environment .env-row {
   display: flex;
   align-items: center;

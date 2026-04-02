@@ -137,6 +137,8 @@
             <section class="growlog-section">
               <h3 class="growlog-section-title">Faze uzgoja</h3>
               <div class="tree-stages" id="growlog-tree-stages"></div>
+              <h4 class="growlog-subsection-title">Povijest prijelaza</h4>
+              <div class="stage-history-list" id="growlog-stage-history"></div>
             </section>
             <section class="growlog-section">
               <h3 class="growlog-section-title">Okoliš</h3>
@@ -299,6 +301,24 @@
             <option value="susenje">Sušenje</option>
           </select>
         </label>
+        <div class="plant-stage-transition-block">
+          <p class="field-hint">
+            Kod <strong>nove biljke</strong> nastaje prva bilješka u dnevniku. Kad <strong>mijenjaš fazu</strong> i spremiš,
+            dodaje se nova bilješka s datumom prijelaza (ispod) i fotografijom s ovog obrasca ako je učitana.
+          </p>
+          <label>
+            Datum prijelaza u trenutačno odabranu fazu
+            <input type="date" id="plant-stage-transition-date" />
+          </label>
+          <label>
+            Kratka napomena uz ovaj korak (opcionalno)
+            <input
+              type="text"
+              id="plant-stage-transition-note"
+              placeholder="npr. korijen kroz vrećicu, prvi pravi listovi…"
+            />
+          </label>
+        </div>
         <label>
           Datum početka
           <input type="date" id="plant-start-date" />
@@ -361,6 +381,7 @@
             <option value="okolis">Okoliš</option>
             <option value="presadjivanje">Presađivanje</option>
             <option value="stresori">Stresori</option>
+            <option value="faza">Faza / milestone</option>
             <option value="ostalo">Ostalo</option>
           </select>
         </label>
