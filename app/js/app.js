@@ -42,6 +42,12 @@
     susenje: 'Sušenje',
   };
 
+  function canonicalPlantStage(value) {
+    const v = String(value == null ? '' : value).trim();
+    if (v && Object.prototype.hasOwnProperty.call(STAGES, v)) return v;
+    return 'klijanje';
+  }
+
   const SUBPHASE_POTS = {
     pot_10dcl: '10 dcl',
     pot_1_5l: '1,5 L',
@@ -523,16 +529,19 @@
       transDate.value = localDateYYYYMMDD();
     }
     if (transNote) transNote.value = '';
+    const stageAtOpenEl = document.getElementById('plant-stage-at-open');
     document.getElementById('plant-id').value = editId || '';
     titleEl.textContent = editId ? 'Uredi biljku' : 'Nova biljka';
     document.getElementById('plant-photo').value = '';
     if (editId) {
       const p = getPlants().find((x) => x.id === editId);
       if (p) {
+        const stageCanonical = canonicalPlantStage(p.stage);
+        if (stageAtOpenEl) stageAtOpenEl.value = stageCanonical;
         document.getElementById('plant-name').value = p.name;
         document.getElementById('plant-strain').value = p.strain || '';
         document.getElementById('plant-count').value = p.count ?? 1;
-        document.getElementById('plant-stage').value = p.stage || 'klijanje';
+        document.getElementById('plant-stage').value = stageCanonical;
         const subSel = document.getElementById('plant-subphase');
         if (subSel) subSel.value = p.subphase && SUBPHASE_POTS[p.subphase] ? p.subphase : '';
         document.getElementById('plant-start-date').value = p.startDate || '';
@@ -551,10 +560,13 @@
           photoData.value = '';
           photoPreview.innerHTML = '';
         }
+      } else if (stageAtOpenEl) {
+        stageAtOpenEl.value = '';
       }
     } else {
       form.reset();
       document.getElementById('plant-id').value = '';
+      if (stageAtOpenEl) stageAtOpenEl.value = '';
       document.getElementById('plant-count').value = 1;
       document.getElementById('plant-stage').value = 'klijanje';
       const subSelNew = document.getElementById('plant-subphase');
@@ -605,7 +617,7 @@
     const countVal = document.getElementById('plant-count').value.trim();
     const countNum = Math.max(1, parseInt(countVal || '1', 10) || 1);
     const newId = id || uuid();
-    const newStage = document.getElementById('plant-stage').value;
+    const newStage = canonicalPlantStage(document.getElementById('plant-stage').value);
     const startDateVal = document.getElementById('plant-start-date').value || null;
     const transDateEl = document.getElementById('plant-stage-transition-date');
     const transNoteEl = document.getElementById('plant-stage-transition-note');
@@ -635,21 +647,28 @@
         photo: photoData || null,
         meta: { faza: { from: null, to: newStage } },
       });
-    } else if (prev && prev.stage !== newStage) {
-      const td = (transDateEl && transDateEl.value) || localDateYYYYMMDD();
-      stageHistory.push({ from: prev.stage, to: newStage, date: td });
-      stageDates[newStage] = td;
-      const base = 'Prijelaz faze: ' + (STAGES[prev.stage] || prev.stage) + ' → ' + (STAGES[newStage] || newStage);
-      const note1 = transitionNote ? base + '. ' + transitionNote : base;
-      journalAdds.push({
-        id: uuid(),
-        plantId: newId,
-        date: td,
-        type: 'faza',
-        note: note1,
-        photo: photoData || null,
-        meta: { faza: { from: prev.stage, to: newStage } },
-      });
+    } else if (id) {
+      const atOpenEl = document.getElementById('plant-stage-at-open');
+      const stageAtOpen = canonicalPlantStage(
+        atOpenEl && String(atOpenEl.value).trim() !== '' ? atOpenEl.value : prev && prev.stage
+      );
+      if (stageAtOpen !== newStage) {
+        const td = (transDateEl && transDateEl.value) || localDateYYYYMMDD();
+        stageHistory.push({ from: stageAtOpen, to: newStage, date: td });
+        stageDates[newStage] = td;
+        const base =
+          'Prijelaz faze: ' + (STAGES[stageAtOpen] || stageAtOpen) + ' → ' + (STAGES[newStage] || newStage);
+        const note1 = transitionNote ? base + '. ' + transitionNote : base;
+        journalAdds.push({
+          id: uuid(),
+          plantId: newId,
+          date: td,
+          type: 'faza',
+          note: note1,
+          photo: photoData || null,
+          meta: { faza: { from: stageAtOpen, to: newStage } },
+        });
+      }
     }
 
     const payload = {
