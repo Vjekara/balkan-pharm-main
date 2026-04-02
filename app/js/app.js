@@ -49,13 +49,14 @@
   }
 
   const SUBPHASE_POTS = {
-    pot_10dcl: '10 dcl',
-    pot_1_5l: '1,5 L',
+    pot_1_5dcl: '1,5 dcl',
     pot_5l: '5 L',
     pot_30l: '30 L',
+    pot_10dcl: '10 dcl',
+    pot_1_5l: '1,5 L',
   };
 
-  const SUBPHASE_ORDER = ['pot_10dcl', 'pot_1_5l', 'pot_5l', 'pot_30l'];
+  const SUBPHASE_ORDER = ['pot_1_5dcl', 'pot_5l', 'pot_30l'];
 
   function subphaseLabel(key) {
     if (!key) return '';
@@ -254,49 +255,61 @@
 
     const stageOrder = ['klijanje', 'sadnica', 'vegetativna', 'cvjetanje', 'susenje'];
     const stageDates = plant.stageDates || {};
-    document.getElementById('growlog-tree-stages').innerHTML = stageOrder
+    const stageRows = stageOrder
       .map((s) => {
         const date = stageDates[s] || (s === 'klijanje' ? startDate : null);
-        const isCurrent = plant.stage === s;
+        const isCurrent = canonicalPlantStage(plant.stage) === s;
         const label = STAGES[s] || s;
         const dateStr = date ? new Date(date).toLocaleDateString('hr-HR', { day: 'numeric', month: 'short', year: '2-digit' }) : '—';
         return '<div class="tree-stage-item' + (isCurrent ? ' current' : '') + '"><span class="tree-stage-icon">' + (STAGE_ICONS[s] || '•') + '</span><span class="tree-stage-label">' + label + '</span><span class="tree-stage-date">' + dateStr + '</span></div>';
       })
       .join('');
 
-    const subPhEl = document.getElementById('growlog-subphases');
-    if (subPhEl) {
-      subPhEl.innerHTML = SUBPHASE_ORDER.map((k) => {
-        const isCurrent = plant.subphase === k;
-        const label = SUBPHASE_POTS[k];
-        return (
-          '<div class="tree-stage-item tree-subphase-item' +
-          (isCurrent ? ' current' : '') +
-          '"><span class="tree-stage-icon">🫙</span><span class="tree-stage-label">' +
-          label +
-          '</span></div>'
-        );
-      }).join('');
+    const subRows = SUBPHASE_ORDER.map((k) => {
+      const isCurrent = plant.subphase === k;
+      const label = SUBPHASE_POTS[k];
+      return (
+        '<div class="tree-stage-item tree-subphase-item' +
+        (isCurrent ? ' current' : '') +
+        '"><span class="tree-stage-icon">🫙</span><span class="tree-stage-label">' +
+        escapeHtml(label) +
+        '</span></div>'
+      );
+    }).join('');
+
+    const hist = plant.stageHistory || [];
+    let histHtml;
+    if (hist.length === 0) {
+      histHtml =
+        '<p class="growlog-empty">Još nema zapisanih prijelaza. Mijenjaj fazu u &quot;Uredi biljku&quot; — nastaje bilješka u dnevniku.</p>';
+    } else {
+      histHtml = hist
+        .slice()
+        .reverse()
+        .map((h) => {
+          const d = h.date ? new Date(h.date).toLocaleDateString('hr-HR', { day: 'numeric', month: 'short', year: 'numeric' }) : '—';
+          const line = h.from
+            ? escapeHtml(STAGES[h.from] || h.from) + ' → ' + escapeHtml(STAGES[h.to] || h.to)
+            : 'Započetak: ' + escapeHtml(STAGES[h.to] || h.to);
+          return '<div class="stage-history-item"><span class="stage-history-date">' + d + '</span><span class="stage-history-label">' + line + '</span></div>';
+        })
+        .join('');
     }
 
-    const histEl = document.getElementById('growlog-stage-history');
-    if (histEl) {
-      const hist = plant.stageHistory || [];
-      if (hist.length === 0) {
-        histEl.innerHTML = '<p class="growlog-empty">Još nema zapisanih prijelaza. Mijenjaj fazu u &quot;Uredi biljku&quot; — nastaje bilješka u dnevniku.</p>';
-      } else {
-        histEl.innerHTML = hist
-          .slice()
-          .reverse()
-          .map((h) => {
-            const d = h.date ? new Date(h.date).toLocaleDateString('hr-HR', { day: 'numeric', month: 'short', year: 'numeric' }) : '—';
-            const line = h.from
-              ? escapeHtml(STAGES[h.from] || h.from) + ' → ' + escapeHtml(STAGES[h.to] || h.to)
-              : 'Započetak: ' + escapeHtml(STAGES[h.to] || h.to);
-            return '<div class="stage-history-item"><span class="stage-history-date">' + d + '</span><span class="stage-history-label">' + line + '</span></div>';
-          })
-          .join('');
-      }
+    const phasesPanel = document.getElementById('growlog-phases-panel');
+    if (phasesPanel) {
+      phasesPanel.innerHTML =
+        '<div class="tree-stages growlog-tree-stages">' +
+        stageRows +
+        '</div>' +
+        '<h4 class="growlog-subsection-title">Podfaze (lonci)</h4>' +
+        '<div class="tree-stages tree-subphases">' +
+        subRows +
+        '</div>' +
+        '<h4 class="growlog-subsection-title">Povijest prijelaza</h4>' +
+        '<div class="stage-history-list">' +
+        histHtml +
+        '</div>';
     }
 
     document.getElementById('growlog-environment').innerHTML = `

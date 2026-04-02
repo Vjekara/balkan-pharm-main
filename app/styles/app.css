@@ -1165,6 +1165,16 @@ body {
   color: var(--text-muted);
 }
 
+.growlog-phases-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+.growlog-phases-panel > .tree-stages:first-child {
+  margin-bottom: 0.25rem;
+}
+
 .growlog-subsection-title {
   margin: 1rem 0 0.5rem;
   font-size: 0.82rem;
