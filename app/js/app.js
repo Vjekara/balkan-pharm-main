@@ -168,6 +168,16 @@
     });
   });
 
+  const viewGrowlogEl = document.getElementById('view-growlog');
+  if (viewGrowlogEl) {
+    viewGrowlogEl.addEventListener('click', (e) => {
+      if (e.target.closest('#growlog-back')) {
+        e.preventDefault();
+        showView('plants');
+      }
+    });
+  }
+
   function openGrowlog(plantId) {
     showView('growlog', plantId);
   }
@@ -318,12 +328,40 @@
       <div class="env-row"><span class="env-icon">🕐</span> ${exposure} osvjetljenja</div>
     `;
 
-    const mainImg = plant.photo || (allPhotos.length ? allPhotos[0] : null);
-    const heroEl = document.getElementById('growlog-hero-image');
-    if (mainImg) heroEl.innerHTML = '<img src="' + mainImg + '" alt="" />';
-    else heroEl.innerHTML = '<div class="growlog-hero-placeholder">Nema glavne fotografije</div>';
-
-    document.getElementById('growlog-plant-name').textContent = plant.name;
+    const heroEl = document.getElementById('growlog-hero');
+    if (heroEl) {
+      const stageKey = canonicalPlantStage(plant.stage);
+      const stageLabel = STAGES[stageKey] || plant.stage;
+      const subLab = plant.subphase ? subphaseLabel(plant.subphase) : '';
+      const strainHtml = plant.strain
+        ? '<p class="growlog-hero-strain"><span class="growlog-hero-strain-icon" aria-hidden="true">🧬</span>' +
+          escapeHtml(plant.strain) +
+          '</p>'
+        : '';
+      heroEl.innerHTML =
+        '<div class="growlog-hero-glow" aria-hidden="true"></div>' +
+        '<div class="growlog-hero-inner">' +
+        '<div class="growlog-hero-badges">' +
+        '<span class="growlog-hero-chip growlog-hero-chip--accent">' +
+        escapeHtml(stageLabel) +
+        '</span>' +
+        (subLab
+          ? '<span class="growlog-hero-chip">' + escapeHtml(subLab) + '</span>'
+          : '') +
+        '<span class="growlog-hero-chip">' +
+        durationWeeks +
+        ' tj. uzgoja</span>' +
+        '<span class="growlog-hero-chip growlog-hero-chip--muted">' +
+        escapeHtml(envType) +
+        '</span>' +
+        '</div>' +
+        '<h2 class="growlog-hero-title">' +
+        escapeHtml(plant.name) +
+        '</h2>' +
+        strainHtml +
+        '<p class="growlog-hero-hint">Fotografije su u bočnoj traci i u nedavnim slikama ispod.</p>' +
+        '</div>';
+    }
 
     const timelineItems = [];
     entries.slice(0, 20).forEach((e) => {
@@ -340,8 +378,6 @@
 
     const stripPhotos = allPhotos.slice(0, 8);
     document.getElementById('growlog-photo-strip').innerHTML = stripPhotos.map((src) => '<img src="' + src + '" alt="" />').join('') || '<p class="growlog-empty">Nema fotografija</p>';
-
-    document.getElementById('growlog-back').onclick = () => showView('plants');
 
     document.getElementById('growlog-view-all-photos').onclick = () => {
       document.getElementById('growlog-photo-strip').scrollIntoView({ behavior: 'smooth' });
