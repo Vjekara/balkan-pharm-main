@@ -102,25 +102,71 @@
     <label for="password">Lozinka</label>
     <input id="password" type="password" required placeholder="••••••••" />
     <button type="submit">Prijavi se</button>
+    <p id="login-status" style="margin-top:0.75rem;font-size:0.85rem;" aria-live="polite"></p>
     <div class="back-link"><a href="../index.html">← Povratak na početnu</a></div>
   </form>
-  <script>
-    (function () {
-      var form = document.getElementById('login-form');
-      var STORAGE_AUTH = 'balpha-shop-auth';
-      if (localStorage.getItem(STORAGE_AUTH)) {
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.13.1/firebase-app.js";
+    import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.13.1/firebase-auth.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyB-3wuIEOqpnnAqWiBYuSTEp1is_n76DEg",
+      authDomain: "balpha-9dab9.firebaseapp.com",
+      projectId: "balpha-9dab9",
+      storageBucket: "balpha-9dab9.firebasestorage.app",
+      messagingSenderId: "398537397385",
+      appId: "1:398537397385:web:9bd3aec82f44ddec20e258",
+      measurementId: "G-HLXHTQP41H"
+    };
+
+    const STORAGE_AUTH = 'balpha-shop-auth';
+    const form = document.getElementById('login-form');
+    const statusEl = document.getElementById('login-status');
+    const submitBtn = form.querySelector('button[type="submit"]');
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+
+    function setStatus(msg, isError = false) {
+      statusEl.textContent = msg;
+      statusEl.style.color = isError ? '#fca5a5' : 'rgba(255,255,255,0.72)';
+    }
+
+    onAuthStateChanged(auth, (user) => {
+      if (user) {
+        localStorage.setItem(STORAGE_AUTH, JSON.stringify({ email: user.email || '', uid: user.uid, loggedAt: Date.now() }));
         window.location.href = '../app/dnevnik/';
-        return;
       }
-      form.addEventListener('submit', function (e) {
-        e.preventDefault();
-        var email = document.getElementById('email').value.trim();
-        var password = document.getElementById('password').value;
-        if (!email || !password) return;
-        localStorage.setItem(STORAGE_AUTH, JSON.stringify({ email: email, loggedAt: Date.now() }));
-        window.location.href = '../app/dnevnik/';
-      });
-    })();
+    });
+
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const email = document.getElementById('email').value.trim();
+      const password = document.getElementById('password').value;
+      if (!email || !password) return;
+      submitBtn.disabled = true;
+      setStatus('Prijava u tijeku…');
+      try {
+        await signInWithEmailAndPassword(auth, email, password);
+      } catch (err) {
+        if (err && err.code === 'auth/user-not-found') {
+          try {
+            setStatus('Kreiranje novog računa…');
+            await createUserWithEmailAndPassword(auth, email, password);
+            return;
+          } catch (createErr) {
+            setStatus('Neuspjela registracija. Provjerite lozinku (min 6 znakova).', true);
+          }
+        } else if (err && err.code === 'auth/wrong-password') {
+          setStatus('Pogrešna lozinka. Pokušajte ponovno.', true);
+        } else if (err && err.code === 'auth/invalid-email') {
+          setStatus('E-mail nije ispravan.', true);
+        } else {
+          setStatus('Prijava nije uspjela. Pokušajte ponovno.', true);
+        }
+      } finally {
+        submitBtn.disabled = false;
+      }
+    });
   </script>
 </body>
 </html>

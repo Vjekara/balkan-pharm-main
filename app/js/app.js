@@ -7,6 +7,7 @@
 
   const STORAGE_PLANTS = 'balpha-shop-plants';
   const STORAGE_ENTRIES = 'balpha-shop-entries';
+  const STORAGE_TOOLBOX = 'balpha-shop-toolbox';
 
   // One-time migration from previous storage keys (older branding).
   (function migrateOldStorageKeys() {
@@ -33,6 +34,115 @@
       // ignore
     }
   })();
+
+  let remoteSyncReady = false;
+  let remoteSyncTimer = null;
+  let remoteSyncPending = {};
+  let remoteSyncInFlight = false;
+
+  function getStoredAuth() {
+    try {
+      const raw = localStorage.getItem(STORAGE_AUTH);
+      return raw ? JSON.parse(raw) : null;
+    } catch {
+      return null;
+    }
+  }
+
+  function getFirebaseUserId() {
+    try {
+      if (window.firebase && firebase.auth && firebase.auth().currentUser) {
+        return firebase.auth().currentUser.uid;
+      }
+    } catch {
+      // ignore
+    }
+    const auth = getStoredAuth();
+    return auth && auth.uid ? auth.uid : null;
+  }
+
+  function getStateDocRef(uid) {
+    if (!uid || !window.firebase || !firebase.firestore) return null;
+    return firebase.firestore().collection('users').doc(uid).collection('app').doc('state');
+  }
+
+  function scheduleRemoteSync(patch) {
+    if (!remoteSyncReady) return;
+    remoteSyncPending = Object.assign(remoteSyncPending, patch || {});
+    if (remoteSyncTimer) clearTimeout(remoteSyncTimer);
+    remoteSyncTimer = setTimeout(() => {
+      flushRemoteSync();
+    }, 500);
+  }
+
+  async function flushRemoteSync() {
+    if (remoteSyncInFlight) return;
+    const uid = getFirebaseUserId();
+    const ref = getStateDocRef(uid);
+    if (!ref) return;
+    const payload = Object.assign({}, remoteSyncPending);
+    if (!Object.keys(payload).length) return;
+    remoteSyncPending = {};
+    remoteSyncInFlight = true;
+    try {
+      payload.updatedAt = Date.now();
+      await ref.set(payload, { merge: true });
+    } catch {
+      // keep local data as source of truth if network fails
+    } finally {
+      remoteSyncInFlight = false;
+      if (Object.keys(remoteSyncPending).length) flushRemoteSync();
+    }
+  }
+
+  async function loadRemoteStateIntoLocal(uid) {
+    const ref = getStateDocRef(uid);
+    if (!ref) return;
+    try {
+      const snap = await ref.get();
+      if (!snap.exists) return;
+      const data = snap.data() || {};
+      if (Array.isArray(data.plants)) localStorage.setItem(STORAGE_PLANTS, JSON.stringify(data.plants));
+      if (Array.isArray(data.entries)) localStorage.setItem(STORAGE_ENTRIES, JSON.stringify(data.entries));
+      if (data.toolbox && typeof data.toolbox === 'object') localStorage.setItem(STORAGE_TOOLBOX, JSON.stringify(data.toolbox));
+    } catch {
+      // ignore and keep local data
+    }
+  }
+
+  function refreshAllViewsAfterRemoteLoad() {
+    try {
+      renderDashboard();
+      renderPlants();
+      renderJournal();
+      if (typeof fillToolboxPlantSelects === 'function') fillToolboxPlantSelects();
+      renderToolbox();
+      if (currentGrowlogPlantId) renderGrowlog(currentGrowlogPlantId);
+    } catch {
+      // ignore
+    }
+  }
+
+  function initFirebaseSync() {
+    if (!window.firebase || !firebase.auth || !firebase.firestore) {
+      remoteSyncReady = false;
+      return;
+    }
+    firebase.auth().onAuthStateChanged(async (user) => {
+      if (!user) {
+        localStorage.removeItem(STORAGE_AUTH);
+        window.location.replace('../dnevnik/');
+        return;
+      }
+      localStorage.setItem(
+        STORAGE_AUTH,
+        JSON.stringify({ email: user.email || '', uid: user.uid, loggedAt: Date.now() })
+      );
+      await loadRemoteStateIntoLocal(user.uid);
+      remoteSyncReady = true;
+      refreshAllViewsAfterRemoteLoad();
+    });
+  }
 
   const STAGES = {
     klijanje: 'Klijanje',
@@ -85,6 +195,7 @@
 
   function setPlants(plants) {
     localStorage.setItem(STORAGE_PLANTS, JSON.stringify(plants));
+    scheduleRemoteSync({ plants: plants || [] });
   }
 
   function getEntries() {
@@ -98,6 +209,7 @@
 
   function setEntries(entries) {
     localStorage.setItem(STORAGE_ENTRIES, JSON.stringify(entries));
+    scheduleRemoteSync({ entries: entries || [] });
   }
 
   function uuid() {
@@ -128,7 +240,12 @@
   let currentGrowlogPlantId = null;
 
   if (logoutBtn) {
-    logoutBtn.addEventListener('click', () => {
+    logoutBtn.addEventListener('click', async () => {
+      try {
+        if (window.firebase && firebase.auth) await firebase.auth().signOut();
+      } catch {
+        // ignore
+      }
       localStorage.removeItem(STORAGE_AUTH);
       window.location.replace('../dnevnik/');
     });
@@ -1005,8 +1122,6 @@
   });
 
   // --- Toolbox (Alati) ---
-  const STORAGE_TOOLBOX = 'balpha-shop-toolbox';
-
   function getToolboxData() {
     try {
       const data = localStorage.getItem(STORAGE_TOOLBOX);
@@ -1025,6 +1140,7 @@
 
   function setToolboxData(data) {
     localStorage.setItem(STORAGE_TOOLBOX, JSON.stringify(data));
+    scheduleRemoteSync({ toolbox: data || {} });
   }
 
   function openToolboxPanel(tool) {
@@ -1367,6 +1483,7 @@
   }
 
   // Init
+  initFirebaseSync();
   fillEntryPlantSelect();
   fillJournalPlantFilter();
   const params = new URLSearchParams(window.location.search);

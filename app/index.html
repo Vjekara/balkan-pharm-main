@@ -431,6 +431,25 @@
     </div>
   </div>
 
+  <script src="https://www.gstatic.com/firebasejs/10.13.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.13.1/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.13.1/firebase-firestore-compat.js"></script>
+  <script>
+    (function () {
+      var firebaseConfig = {
+        apiKey: "AIzaSyB-3wuIEOqpnnAqWiBYuSTEp1is_n76DEg",
+        authDomain: "balpha-9dab9.firebaseapp.com",
+        projectId: "balpha-9dab9",
+        storageBucket: "balpha-9dab9.firebasestorage.app",
+        messagingSenderId: "398537397385",
+        appId: "1:398537397385:web:9bd3aec82f44ddec20e258",
+        measurementId: "G-HLXHTQP41H"
+      };
+      if (window.firebase && !window.firebase.apps.length) {
+        window.firebase.initializeApp(firebaseConfig);
+      }
+    })();
+  </script>
   <script src="js/app.js"></script>
 </body>
 </html>
