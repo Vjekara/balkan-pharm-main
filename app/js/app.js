@@ -106,18 +106,143 @@
     }
   }
 
-  async function loadRemoteStateIntoLocal(uid) {
+  async function loadRemoteState(uid) {
     const ref = getStateDocRef(uid);
-    if (!ref) return;
+    if (!ref) return null;
     try {
       const snap = await ref.get();
-      if (!snap.exists) return;
-      const data = snap.data() || {};
-      if (Array.isArray(data.plants)) localStorage.setItem(STORAGE_PLANTS, JSON.stringify(data.plants));
-      if (Array.isArray(data.entries)) localStorage.setItem(STORAGE_ENTRIES, JSON.stringify(data.entries));
-      if (data.toolbox && typeof data.toolbox === 'object') localStorage.setItem(STORAGE_TOOLBOX, JSON.stringify(data.toolbox));
+      if (!snap.exists) return null;
+      return snap.data() || null;
     } catch {
-      // ignore and keep local data
+      return null;
+    }
+  }
+
+  function readJsonArrayFromKeys(keys) {
+    const out = [];
+    keys.forEach((k) => {
+      try {
+        const raw = localStorage.getItem(k);
+        if (!raw) return;
+        const parsed = JSON.parse(raw);
+        if (Array.isArray(parsed)) out.push(...parsed);
+      } catch {
+        // ignore
+      }
+    });
+    return out;
+  }
+
+  function readJsonObjectFromKeys(keys) {
+    const out = {};
+    keys.forEach((k) => {
+      try {
+        const raw = localStorage.getItem(k);
+        if (!raw) return;
+        const parsed = JSON.parse(raw);
+        if (parsed && typeof parsed === 'object') Object.assign(out, parsed);
+      } catch {
+        // ignore
+      }
+    });
+    return out;
+  }
+
+  function uniqueByStableKey(items) {
+    const seen = new Map();
+    (items || []).forEach((item) => {
+      if (!item || typeof item !== 'object') return;
+      const key =
+        item.id ||
+        JSON.stringify([
+          item.plantId || item.plant || '',
+          item.date || '',
+          item.type || '',
+          item.value1 || item.soilQuality || item.temperature || '',
+          item.note || '',
+        ]);
+      const prev = seen.get(key);
+      if (!prev) {
+        seen.set(key, item);
+        return;
+      }
+      const prevTs = Date.parse(prev.updatedAt || prev.createdAt || '') || 0;
+      const curTs = Date.parse(item.updatedAt || item.createdAt || '') || 0;
+      if (curTs >= prevTs) seen.set(key, item);
+    });
+    return Array.from(seen.values());
+  }
+
+  function mergeToolboxData(a, b) {
+    const safeA = a && typeof a === 'object' ? a : {};
+    const safeB = b && typeof b === 'object' ? b : {};
+    const keys = ['watering', 'feeding', 'environment', 'transplant', 'stressors'];
+    const out = {};
+    keys.forEach((k) => {
+      out[k] = uniqueByStableKey([...(safeA[k] || []), ...(safeB[k] || [])]);
+    });
+    return out;
+  }
+
+  function collectLocalRecoveryState() {
+    const prevBrandPrefix = 'ba' + 'lpha-shop';
+    const plants = readJsonArrayFromKeys([
+      STORAGE_PLANTS,
+      'legacy-balpha-shop-plants',
+      prevBrandPrefix + '-plants',
+      'balkan-pharm-plants',
+    ]);
+    const entries = readJsonArrayFromKeys([
+      STORAGE_ENTRIES,
+      'legacy-balpha-shop-entries',
+      prevBrandPrefix + '-entries',
+      'balkan-pharm-entries',
+    ]);
+    const toolbox = readJsonObjectFromKeys([
+      STORAGE_TOOLBOX,
+      'legacy-balpha-shop-toolbox',
+      prevBrandPrefix + '-toolbox',
+      'balkan-pharm-toolbox',
+    ]);
+    return {
+      plants: uniqueByStableKey(plants),
+      entries: uniqueByStableKey(entries),
+      toolbox: mergeToolboxData(toolbox, {}),
+    };
+  }
+
+  function applyStateToLocal(state) {
+    if (!state) return;
+    if (Array.isArray(state.plants)) localStorage.setItem(STORAGE_PLANTS, JSON.stringify(state.plants));
+    if (Array.isArray(state.entries)) localStorage.setItem(STORAGE_ENTRIES, JSON.stringify(state.entries));
+    if (state.toolbox && typeof state.toolbox === 'object') localStorage.setItem(STORAGE_TOOLBOX, JSON.stringify(state.toolbox));
+  }
+
+  function mergeRemoteAndLocal(remoteData, localData) {
+    const remote = remoteData || {};
+    const local = localData || {};
+    return {
+      plants: uniqueByStableKey([...(remote.plants || []), ...(local.plants || [])]),
+      entries: uniqueByStableKey([...(remote.entries || []), ...(local.entries || [])]),
+      toolbox: mergeToolboxData(remote.toolbox || {}, local.toolbox || {}),
+    };
+  }
+
+  async function saveMergedState(uid, merged) {
+    const ref = getStateDocRef(uid);
+    if (!ref || !merged) return;
+    try {
+      await ref.set(
+        {
+          plants: merged.plants || [],
+          entries: merged.entries || [],
+          toolbox: merged.toolbox || {},
+          updatedAt: Date.now(),
+        },
+        { merge: true }
+      );
+    } catch {
+      // ignore
     }
   }
 
@@ -149,7 +274,11 @@
         STORAGE_AUTH,
         JSON.stringify({ email: user.email || '', uid: user.uid, loggedAt: Date.now() })
       );
-      await loadRemoteStateIntoLocal(user.uid);
+      const remote = await loadRemoteState(user.uid);
+      const local = collectLocalRecoveryState();
+      const merged = mergeRemoteAndLocal(remote, local);
+      applyStateToLocal(merged);
+      await saveMergedState(user.uid, merged);
       remoteSyncReady = true;
       refreshAllViewsAfterRemoteLoad();
     });
