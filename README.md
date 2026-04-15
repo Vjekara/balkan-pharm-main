@@ -1,4 +1,4 @@
-# balpha.shop – CBD dnevnik uzgoja
+# dnevnik.live – CBD dnevnik uzgoja
 
 Web stranica i aplikacija za vođenje dnevnika uzgoja CBD biljaka, na hrvatskom jeziku.
 
@@ -33,12 +33,12 @@ Zatim otvori: http://localhost:8000
 
 Aplikacija se može objaviti besplatno na GitHub Pages.
 
-1. U repozitoriju [mgebela/balpha.shop](https://github.com/mgebela/balpha.shop) otvori **Settings** → **Pages**.
+1. U repozitoriju [mgebela/balkan-pharm-main](https://github.com/mgebela/balkan-pharm-main) otvori **Settings** → **Pages**.
 2. Kod **Build and deployment** odaberi **Source**: **GitHub Actions**.
 3. Nakon pusha na granicu `main`, workflow automatski deploya stranicu.
 
 **Live URL** (nakon prvog deploya):  
-**https://mgebela.github.io/balpha.shop/**
+**https://dnevnik.live/**
 
 ## Tehnologije
 

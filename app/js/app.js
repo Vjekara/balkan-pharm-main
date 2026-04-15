@@ -1,23 +1,27 @@
 (function () {
-  const STORAGE_AUTH = 'balpha-shop-auth';
+  const STORAGE_AUTH = 'dnevnik-live-auth';
   if (!localStorage.getItem(STORAGE_AUTH)) {
     window.location.replace('../dnevnik/');
     return;
   }
 
-  const STORAGE_PLANTS = 'balpha-shop-plants';
-  const STORAGE_ENTRIES = 'balpha-shop-entries';
-  const STORAGE_TOOLBOX = 'balpha-shop-toolbox';
+  const STORAGE_PLANTS = 'dnevnik-live-plants';
+  const STORAGE_ENTRIES = 'dnevnik-live-entries';
+  const STORAGE_TOOLBOX = 'dnevnik-live-toolbox';
 
   // One-time migration from previous storage keys (older branding).
   (function migrateOldStorageKeys() {
-    const flagKey = 'balpha-shop-migrated-v1';
+    const flagKey = 'dnevnik-live-migrated-v1';
     if (localStorage.getItem(flagKey)) return;
     const pairs = [
       ['balkan-pharm-plants', STORAGE_PLANTS],
       ['balkan-pharm-entries', STORAGE_ENTRIES],
-      ['balkan-pharm-toolbox', 'balpha-shop-toolbox'],
+      ['balkan-pharm-toolbox', STORAGE_TOOLBOX],
       ['balkan-pharm-auth', STORAGE_AUTH],
+      ['balpha-shop-plants', STORAGE_PLANTS],
+      ['balpha-shop-entries', STORAGE_ENTRIES],
+      ['balpha-shop-toolbox', STORAGE_TOOLBOX],
+      ['balpha-shop-auth', STORAGE_AUTH],
     ];
     pairs.forEach(([oldKey, newKey]) => {
       try {
