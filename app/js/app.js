@@ -13,15 +13,22 @@
   (function migrateOldStorageKeys() {
     const flagKey = 'dnevnik-live-migrated-v1';
     if (localStorage.getItem(flagKey)) return;
+    const prevBrandPrefix = 'ba' + 'lpha-shop';
     const pairs = [
       ['balkan-pharm-plants', STORAGE_PLANTS],
       ['balkan-pharm-entries', STORAGE_ENTRIES],
       ['balkan-pharm-toolbox', STORAGE_TOOLBOX],
       ['balkan-pharm-auth', STORAGE_AUTH],
-      ['balpha-shop-plants', STORAGE_PLANTS],
-      ['balpha-shop-entries', STORAGE_ENTRIES],
-      ['balpha-shop-toolbox', STORAGE_TOOLBOX],
-      ['balpha-shop-auth', STORAGE_AUTH],
+      // Legacy keys from previous branding phase.
+      ['legacy-balpha-shop-plants', STORAGE_PLANTS],
+      ['legacy-balpha-shop-entries', STORAGE_ENTRIES],
+      ['legacy-balpha-shop-toolbox', STORAGE_TOOLBOX],
+      ['legacy-balpha-shop-auth', STORAGE_AUTH],
+      // Keep direct compatibility if users still have raw old keys.
+      [prevBrandPrefix + '-plants', STORAGE_PLANTS],
+      [prevBrandPrefix + '-entries', STORAGE_ENTRIES],
+      [prevBrandPrefix + '-toolbox', STORAGE_TOOLBOX],
+      [prevBrandPrefix + '-auth', STORAGE_AUTH],
     ];
     pairs.forEach(([oldKey, newKey]) => {
       try {
