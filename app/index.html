@@ -1,0 +1,545 @@
+<!DOCTYPE html>
+<html lang="hr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>dnevnik.live – Dnevnik uzgoja</title>
+  <link rel="icon" type="image/png" href="../images/bp.png" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&family=Outfit:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="styles/app.css" />
+</head>
+<body class="app-loading">
+  <div class="app">
+    <aside class="sidebar">
+      <a href="../index.html" class="sidebar-logo"><img src="../images/bp.png" alt="dnevnik.live" class="sidebar-logo-img" /></a>
+      <nav class="sidebar-nav">
+        <a href="#" class="nav-item active" data-view="dashboard">
+          <span class="nav-icon">📊</span>
+          <span>Nadzorna ploča</span>
+        </a>
+        <a href="#" class="nav-item" data-view="plants">
+          <span class="nav-icon">🌱</span>
+          <span>Biljke i dnevnik</span>
+        </a>
+        <a href="#" class="nav-item" data-view="cpvo">
+          <span class="nav-icon">📝</span>
+          <span>CPVO-obrazac</span>
+        </a>
+        <a href="#" class="nav-item" data-view="toolbox">
+          <span class="nav-icon">🧰</span>
+          <span>Alati</span>
+        </a>
+         <a href="#" class="nav-item" data-view="danas">
+          <span class="nav-icon">☀</span>
+          <span>Danas</span>
+        </a>
+          <a href="#" class="nav-item admin-only" data-view="admin">
+          <span class="nav-icon">🛠️</span>
+          <span>Admin</span>
+          </a>
+       </nav>
+    </aside>
+
+    <nav class="bottom-nav" aria-label="Glavna navigacija">
+      <a href="#" class="nav-item active" data-view="dashboard">
+        <span class="nav-icon">📊</span>
+        <span class="bottom-nav-label">Nadzorna ploča</span>
+      </a>
+      <a href="#" class="nav-item" data-view="plants">
+        <span class="nav-icon">🌱</span>
+        <span class="bottom-nav-label">Biljke i dnevnik</span>
+      </a>
+      <a href="#" class="nav-item" data-view="cpvo">
+        <span class="nav-icon">📝</span>
+        <span class="bottom-nav-label">CPVO</span>
+      </a>
+      <a href="#" class="nav-item" data-view="toolbox">
+        <span class="nav-icon">🧰</span>
+        <span class="bottom-nav-label">Alati</span>
+      </a>
+      <a href="#" class="nav-item" data-view="danas">
+        <span class="nav-icon">☀</span>
+        <span class="bottom-nav-label">Danas</span>
+      </a>
+      <a href="#" class="nav-item admin-only" data-view="admin">
+        <span class="nav-icon">🛠️</span>
+        <span>Admin</span>
+      </a>
+    </nav>
+
+    <main class="main">
+      <header class="main-header">
+        <h1 class="view-title">Nadzorna ploča</h1>
+        <button type="button" class="btn btn-ghost" id="btn-logout">Odjava</button>
+      </header>
+
+      <div id="view-dashboard" class="view active">
+        <div class="dashboard-cards" id="dashboard-cards"></div>
+        <section class="dashboard-charts-section" id="dashboard-charts-section">
+          <h2>Pregled iz Alata</h2>
+          <div class="dashboard-charts-grid" id="dashboard-charts"></div>
+        </section>
+        <section class="recent-section">
+          <h2>Nedavne bilješke</h2>
+          <div id="recent-notes" class="recent-notes"></div>
+        </section>
+      </div>
+
+      <div id="view-plants" class="view">
+        <section class="plants-journal-section">
+          <h2 class="section-heading">Moje biljke</h2>
+          <div class="toolbar">
+            <button type="button" class="btn btn-primary" id="btn-add-plant">+ Nova biljka</button>
+          </div>
+          <div id="plants-list" class="plants-list"></div>
+        </section>
+        <section class="plants-journal-section plants-journal-diary">
+          <h2 class="section-heading">Dnevnik</h2>
+          <div class="journal-filters">
+            <select id="journal-plant-filter">
+              <option value="">Sve biljke</option>
+            </select>
+          </div>
+          <div class="toolbar">
+            <button type="button" class="btn btn-primary" id="btn-add-entry">+ Nova bilješka</button>
+          </div>
+          <div id="journal-entries" class="journal-entries"></div>
+        </section>
+      </div>
+
+      <div id="view-cpvo" class="view">
+        <section class="plants-journal-section">
+          <h2 class="section-heading">CPVO-obrazac</h2>
+          <div class="journal-cpvo">
+            <div class="cpvo-embed">
+              <iframe
+                src="https://docs.google.com/forms/d/e/1FAIpQLSeBnLAFQmQMs8mbwDgNLruYMfMZETbw8Qew8QouWYbX35NfFg/viewform?embedded=true"
+                width="100%"
+                height="1100"
+                frameborder="0"
+                marginheight="0"
+                marginwidth="0"
+              >
+                Učitavanje obrasca…
+              </iframe>
+            </div>
+            <p class="journal-cpvo-note">
+              Ako se obrazac ne učita u cijelosti, otvorite ga u novom prozoru:
+              <a href="https://docs.google.com/forms/d/e/1FAIpQLSeBnLAFQmQMs8mbwDgNLruYMfMZETbw8Qew8QouWYbX35NfFg/viewform?usp=publish-editor" target="_blank" rel="noreferrer">CPVO-obrazac</a>.
+            </p>
+          </div>
+        </section>
+      </div>
+
+      <div id="view-growlog" class="view view-growlog">
+        <div class="growlog-header-bar">
+          <span class="growlog-updated" id="growlog-updated"></span>
+          <span class="growlog-views" id="growlog-views"></span>
+        </div>
+        <div class="growlog-metrics" id="growlog-metrics"></div>
+        <div class="growlog-layout">
+          <aside class="growlog-sidebar">
+            <section class="growlog-section growlog-photos">
+              <h3 class="growlog-section-title">Fotografije growloga</h3>
+              <div class="growlog-photo-grid" id="growlog-photo-grid"></div>
+              <button type="button" class="link-btn" id="growlog-view-all-photos">Pogledaj sve fotografije</button>
+            </section>
+            <section class="growlog-section">
+              <h3 class="growlog-section-title">Sorta</h3>
+              <div class="growlog-strain" id="growlog-strain"></div>
+            </section>
+            <section class="growlog-section">
+              <h3 class="growlog-section-title">Faze uzgoja</h3>
+              <div id="growlog-phases-panel" class="growlog-phases-panel"></div>
+            </section>
+            <section class="growlog-section">
+              <h3 class="growlog-section-title">Okoliš</h3>
+              <div class="growlog-environment" id="growlog-environment"></div>
+            </section>
+          </aside>
+          <div class="growlog-main">
+            <button type="button" class="btn-back" id="growlog-back">← Natrag na biljke</button>
+            <div class="toolbar growlog-toolbar">
+              <button type="button" class="btn btn-primary" id="btn-add-entry-growlog">+ Nova bilješka za ovu biljku</button>
+            </div>
+            <div class="growlog-hero" id="growlog-hero" aria-label="Pregled biljke"></div>
+            <section class="growlog-timeline-section">
+              <h3 class="growlog-section-title">Vremenska crta growloga</h3>
+              <div class="growlog-timeline" id="growlog-timeline"></div>
+            </section>
+            <section class="growlog-new-photos">
+              <h3 class="growlog-section-title">Nedavne fotografije</h3>
+              <div class="growlog-photo-strip" id="growlog-photo-strip"></div>
+            </section>
+          </div>
+        </div>
+      </div>
+
+      <div id="view-toolbox" class="view">
+        <div class="toolbox-grid">
+          <button type="button" class="toolbox-card toolbox-card-btn" data-tool="watering">
+            <h3>Zalijevanje</h3>
+            <p>Zabilježite kada ste zalijevali biljku.</p>
+          </button>
+          <button type="button" class="toolbox-card toolbox-card-btn" data-tool="feeding">
+            <h3>Gnojidba</h3>
+            <p>Pratite hraniva i doze.</p>
+          </button>
+          <button type="button" class="toolbox-card toolbox-card-btn" data-tool="environment">
+            <h3>Okoliš</h3>
+            <p>Temperature, vlažnost, pH.</p>
+          </button>
+          <button type="button" class="toolbox-card toolbox-card-btn" data-tool="transplant">
+            <h3>Presađivanje</h3>
+            <p>Bilježite detalje presađivanja.</p>
+          </button>
+          <button type="button" class="toolbox-card toolbox-card-btn" data-tool="stressors">
+            <h3>Stresori</h3>
+            <p>Evidentirajte stresne uvjete i nametnike.</p>
+          </button>
+          <button type="button" class="toolbox-card toolbox-card-btn" data-tool="graphs">
+            <h3>Grafovi</h3>
+            <p>Vizualizacija rasta i mjerenja.</p>
+          </button>
+          <button type="button" class="toolbox-card toolbox-card-btn" data-tool="vrijeme">
+            <h3>Vrijeme</h3>
+            <p>Procjena vremena za danas i idućih par dana</p>
+          </button>
+        </div>
+          <div class="toolbox-panels">
+          <div id="toolbox-panel-vrijeme" class="toolbox-panel" data-tool="vrijeme" aria-hidden="true">
+            <h3 class="toolbox-panel-title">Vrijeme</h3>
+                <section class="section cta-section">
+                <h1>Prognoza Vremena</h1>
+                <div id="weather">Loading...</div>
+          </section>
+          </div>
+          <div id="toolbox-panel-watering" class="toolbox-panel" data-tool="watering" aria-hidden="true">
+            <h3 class="toolbox-panel-title">Zalijevanje</h3>
+            <form class="toolbox-form" id="toolbox-form-watering">
+              <label>Datum <input type="date" id="tool-watering-date" required /></label>
+              <label>Količina (mL) <input type="number" id="tool-watering-value1" min="0" placeholder="npr. 500" required /></label>
+              <label>Biljka <select id="tool-watering-value2" required><option value="">-- Odaberi biljku --</option></select></label>
+              <button type="submit" class="btn btn-primary">Dodaj</button>
+            </form>
+            <div class="toolbox-list" id="toolbox-list-watering"></div>
+            <div class="toolbox-chart-wrap"><h4>Graf: Količina po datumu</h4><div class="toolbox-chart" id="toolbox-chart-watering"></div></div>
+          </div>
+          <div id="toolbox-panel-feeding" class="toolbox-panel" data-tool="feeding" aria-hidden="true">
+            <h3 class="toolbox-panel-title">Gnojidba</h3>
+            <form class="toolbox-form" id="toolbox-form-feeding">
+              <label>Datum <input type="date" id="tool-feeding-date" required /></label>
+              <label>Proizvod / doza <input type="text" id="tool-feeding-value1" placeholder="npr. NPK 1 mL/L" required /></label>
+              <label>Napomena <input type="text" id="tool-feeding-value2" placeholder="Opcionalno" /></label>
+              <label>Biljka <select id="tool-feeding-plant" required><option value="">-- Odaberi biljku --</option></select></label>
+              <button type="submit" class="btn btn-primary">Dodaj</button>
+            </form>
+            <div class="toolbox-list" id="toolbox-list-feeding"></div>
+            <div class="toolbox-chart-wrap"><h4>Povijest gnojidbe</h4><div class="toolbox-chart toolbox-chart-bars" id="toolbox-chart-feeding"></div></div>
+          </div>
+          <div id="toolbox-panel-environment" class="toolbox-panel" data-tool="environment" aria-hidden="true">
+            <h3 class="toolbox-panel-title">Okoliš</h3>
+            <form class="toolbox-form" id="toolbox-form-environment">
+              <label>Datum <input type="date" id="tool-environment-date" required /></label>
+              <label>Temperatura (°C) <input type="number" id="tool-environment-value1" step="0.1" placeholder="npr. 24" required /></label>
+              <label>Vlažnost (%) <input type="number" id="tool-environment-value2" min="0" max="100" placeholder="npr. 60" /></label>
+              <label>pH (voda/tlo) <input type="number" id="tool-environment-value3" step="0.1" min="0" max="14" placeholder="npr. 6.2" /></label>
+              <label>Biljka <select id="tool-environment-plant" required><option value="">-- Odaberi biljku --</option></select></label>
+              <button type="submit" class="btn btn-primary">Dodaj</button>
+            </form>
+            <div class="toolbox-list" id="toolbox-list-environment"></div>
+            <div class="toolbox-chart-wrap"><h4>Graf: Temperatura, vlažnost i pH</h4><div class="toolbox-chart" id="toolbox-chart-environment"></div></div>
+          </div>
+          <div id="toolbox-panel-transplant" class="toolbox-panel" data-tool="transplant" aria-hidden="true">
+            <h3 class="toolbox-panel-title">Presađivanje</h3>
+            <form class="toolbox-form" id="toolbox-form-transplant">
+              <label>Datum <input type="date" id="tool-transplant-date" required /></label>
+              <label>Kvaliteta zemlje <input type="text" id="tool-transplant-soil" placeholder="npr. kvalitetna, organska" /></label>
+              <label>Starost biljke u presađivanju <input type="text" id="tool-transplant-age" placeholder="npr. 3 tjedna" /></label>
+              <label>Stanje biljke <input type="text" id="tool-transplant-condition" placeholder="npr. zdrava, dobro ukorijenjena" /></label>
+              <label>Biljka <select id="tool-transplant-plant" required><option value="">-- Odaberi biljku --</option></select></label>
+              <button type="submit" class="btn btn-primary">Dodaj</button>
+            </form>
+            <div class="toolbox-list" id="toolbox-list-transplant"></div>
+          </div>
+          <div id="toolbox-panel-stressors" class="toolbox-panel" data-tool="stressors" aria-hidden="true">
+            <h3 class="toolbox-panel-title">Stresori</h3>
+            <form class="toolbox-form" id="toolbox-form-stressors">
+              <label>Datum <input type="date" id="tool-stressors-date" required /></label>
+              <label>Temperatura <input type="text" id="tool-stressors-temp" placeholder="npr. visoka, niska" /></label>
+              <label>Vlaga <input type="text" id="tool-stressors-humidity" placeholder="npr. suho, vlažno" /></label>
+              <label>VPD (ukupnost svjetlosnih čestica u toku dana) <input type="text" id="tool-stressors-vpd" placeholder="npr. vrijednost ili opis" /></label>
+              <label>Nametnici <input type="text" id="tool-stressors-pests" placeholder="npr. grinje, uši" /></label>
+              <label>Biljka <select id="tool-stressors-plant" required><option value="">-- Odaberi biljku --</option></select></label>
+              <button type="submit" class="btn btn-primary">Dodaj</button>
+            </form>
+            <div class="toolbox-list" id="toolbox-list-stressors"></div>
+          </div>
+          <div id="toolbox-panel-graphs" class="toolbox-panel toolbox-panel-graphs" data-tool="graphs" aria-hidden="true">
+            <h3 class="toolbox-panel-title">Pregled svih grafova</h3>
+            <div class="journal-filters" style="margin-bottom: 1rem;">
+              <select id="tool-graphs-plant">
+                <option value="">Sve biljke</option>
+              </select>
+            </div>
+            <div class="toolbox-overview-charts">
+              <div class="toolbox-overview-block"><h4>Zalijevanje</h4><div class="toolbox-chart" id="overview-chart-watering"></div></div>
+              <div class="toolbox-overview-block"><h4>Okoliš (temperatura, vlažnost, pH)</h4><div class="toolbox-chart" id="overview-chart-environment"></div></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    <div id="view-danas" class="view">
+      <div class="danas-list">
+
+        <label class="danas-item">
+          <input type="checkbox">
+          <div class="danas-content">
+            <span class="danas-title">Zaliti biljke</span>
+            <span class="danas-desc">3 biljke trebaju zalijevanje</span>
+          </div>
+        </label>
+
+        <label class="danas-item">
+          <input type="checkbox">
+            <div class="danas-content">
+              <span class="danas-title">Provjeriti vlagu</span>
+              <span class="danas-desc">Provjera tla u posudama</span>
+            </div>
+        </label>
+
+        <label class="danas-item">
+            <input type="checkbox">
+            <div class="danas-content">
+              <span class="danas-title">Dodati bilješku</span>
+              <span class="danas-desc">Zapiši promjene</span>
+          </div>
+        </label>
+        </div>
+      </div>
+
+      <div id="view-admin" class="view">
+  <h2 class="section-heading">Admin Panel</h2>
+
+  <div class="toolbox-grid">
+    <button class="toolbox-card toolbox-card-btn" id="admin-users">
+      <h3>Korisnici</h3>
+      <p>Upravljanje korisnicima</p>
+    </button>
+
+    <button class="toolbox-card toolbox-card-btn" id="admin-plants">
+      <h3>Biljke</h3>
+      <p>Pregled i uređivanje biljaka</p>
+    </button>
+
+    <button class="toolbox-card toolbox-card-btn" id="admin-entries">
+      <h3>Dnevnik</h3>
+      <p>Upravljanje zapisima</p>
+    </button>
+
+    <button class="toolbox-card toolbox-card-btn admin-super-only admin-system-card" id="admin-tenant">
+      <h3>Tenants</h3>
+      <p>Pregled Tenanta</p>
+    </button>
+
+    <button class="toolbox-card toolbox-card-btn admin-super-only admin-system-card" id="admin-system">
+      <h3>Postavke</h3>
+      <p>Sistemske postavke</p>
+    </button>
+    
+      </div>
+    </div>
+      
+
+    </main>
+  </div>
+
+  <!-- Modal: Nova biljka -->
+  <div id="modal-plant" class="modal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2 id="modal-plant-title">Nova biljka</h2>
+        <button type="button" class="modal-close" aria-label="Zatvori">&times;</button>
+      </div>
+      <form id="form-plant">
+        <input type="hidden" id="plant-id" />
+        <input type="hidden" id="plant-stage-at-open" value="" />
+        <label>
+          Ime biljke *
+          <input type="text" id="plant-name" required placeholder="npr. CBD Auto #1" />
+        </label>
+        <label>
+          Sorta
+          <input type="text" id="plant-strain" placeholder="npr. CBD Auto" />
+        </label>
+        <label>
+          Broj biljaka (nasad)
+          <input type="number" id="plant-count" min="1" step="1" value="1" placeholder="npr. 12" />
+        </label>
+        <label>
+          Faza
+          <select id="plant-stage">
+            <option value="klijanje">Klijanje</option>
+            <option value="sadnica">Sadnica</option>
+            <option value="vegetativna">Vegetativna</option>
+            <option value="cvjetanje">Cvjetanje</option>
+            <option value="susenje">Sušenje</option>
+          </select>
+        </label>
+        <label>
+          Podfaza (volumen lonca)
+          <select id="plant-subphase">
+            <option value="">— nije odabrano —</option>
+            <option value="pot_1_5dcl">1,5 dcl</option>
+            <option value="pot_5l">5 L</option>
+            <option value="pot_30l">30 L</option>
+          </select>
+        </label>
+        <div class="plant-stage-transition-block">
+          <p class="field-hint">
+            Kod <strong>nove biljke</strong> nastaje prva bilješka u dnevniku. Kad <strong>mijenjaš fazu</strong> i spremiš,
+            dodaje se nova bilješka s datumom prijelaza (ispod) i fotografijom s ovog obrasca ako je učitana.
+          </p>
+          <label>
+            Datum prijelaza u trenutačno odabranu fazu
+            <input type="date" id="plant-stage-transition-date" />
+          </label>
+          <label>
+            Kratka napomena uz ovaj korak (opcionalno)
+            <input
+              type="text"
+              id="plant-stage-transition-note"
+              placeholder="npr. korijen kroz vrećicu, prvi pravi listovi…"
+            />
+          </label>
+        </div>
+        <label>
+          Datum početka
+          <input type="date" id="plant-start-date" />
+        </label>
+        <label>
+          Okoliš (npr. Grow tent)
+          <input type="text" id="plant-environment-name" placeholder="npr. Grow tent, Staklenik" />
+        </label>
+        <label>
+          Tip uzgoja
+          <select id="plant-environment-type">
+            <option value="indoor">U zatvorenom</option>
+            <option value="outdoor">Na otvorenom</option>
+          </select>
+        </label>
+        <label>
+          Sati osvjetljenja (dnevno)
+          <input type="number" id="plant-exposure-hours" min="0" max="24" placeholder="npr. 18" />
+        </label>
+        <label>
+          Fotografija biljke
+          <input type="file" id="plant-photo" accept="image/*" class="input-file" />
+          <input type="hidden" id="plant-photo-data" />
+          <span class="media-preview" id="plant-photo-preview"></span>
+        </label>
+        <label>
+          Bilješke
+          <textarea id="plant-notes" rows="3" placeholder="Opcionalne bilješke..."></textarea>
+        </label>
+        <div class="modal-actions">
+          <button type="button" class="btn btn-ghost modal-cancel">Odustani</button>
+          <button type="submit" class="btn btn-primary">Spremi</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Modal: Nova bilješka -->
+  <div id="modal-entry" class="modal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2>Nova bilješka</h2>
+        <button type="button" class="modal-close" aria-label="Zatvori">&times;</button>
+      </div>
+      <form id="form-entry">
+        <label>
+          Biljka
+          <select id="entry-plant"></select>
+        </label>
+        <label>
+          Datum *
+          <input type="date" id="entry-date" required />
+        </label>
+        <label>
+          Vrsta
+          <select id="entry-type">
+            <option value="opcenito">Općenito</option>
+            <option value="zalijevanje">Zalijevanje</option>
+            <option value="gnojidba">Gnojidba</option>
+            <option value="okolis">Okoliš</option>
+            <option value="presadjivanje">Presađivanje</option>
+            <option value="stresori">Stresori</option>
+            <option value="faza">Faza / milestone</option>
+            <option value="ostalo">Ostalo</option>
+          </select>
+        </label>
+        <div id="entry-extra" class="entry-extra">
+          <div id="entry-extra-presadjivanje" class="entry-extra-section" aria-hidden="true">
+            <h4 class="entry-extra-title">Presađivanje</h4>
+            <label>Kvaliteta zemlje <input type="text" id="entry-transplant-soil" placeholder="npr. kvalitetna, organska" /></label>
+            <label>Starost biljke u presađivanju <input type="text" id="entry-transplant-age" placeholder="npr. 3 tjedna" /></label>
+            <label>Stanje biljke <input type="text" id="entry-transplant-condition" placeholder="npr. zdrava, dobro ukorijenjena" /></label>
+          </div>
+          <div id="entry-extra-stresori" class="entry-extra-section" aria-hidden="true">
+            <h4 class="entry-extra-title">Stresori</h4>
+            <label>Temperatura <input type="text" id="entry-stressor-temp" placeholder="npr. visoka, niska" /></label>
+            <label>Vlaga <input type="text" id="entry-stressor-humidity" placeholder="npr. suho, vlažno" /></label>
+            <label>VPD (ukupnost svjetlosnih čestica u toku dana) <input type="text" id="entry-stressor-vpd" placeholder="npr. vrijednost ili opis" /></label>
+            <label>Nametnici <input type="text" id="entry-stressor-pests" placeholder="npr. grinje, uši" /></label>
+          </div>
+        </div>
+        <label>
+          Bilješka *
+          <textarea id="entry-note" rows="4" required placeholder="Što ste danas napravili?"></textarea>
+        </label>
+        <label>
+          Fotografija
+          <input type="file" id="entry-photo" accept="image/*" class="input-file" />
+          <input type="hidden" id="entry-photo-data" />
+          <span class="media-preview" id="entry-photo-preview"></span>
+        </label>
+        <label>
+          Video
+          <input type="file" id="entry-video" accept="video/*" class="input-file" />
+          <input type="hidden" id="entry-video-data" />
+          <span class="media-preview" id="entry-video-preview"></span>
+        </label>
+        <div class="modal-actions">
+          <button type="button" class="btn btn-ghost modal-cancel">Odustani</button>
+          <button type="submit" class="btn btn-primary">Spremi</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script src="https://www.gstatic.com/firebasejs/10.13.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.13.1/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.13.1/firebase-firestore-compat.js"></script>
+  <script>
+    (function () {
+      var firebaseConfig = {
+        apiKey: "AIzaSyB-3wuIEOqpnnAqWiBYuSTEp1is_n76DEg",
+        authDomain: "balpha-9dab9.firebaseapp.com",
+        projectId: "balpha-9dab9",
+        storageBucket: "balpha-9dab9.firebasestorage.app",
+        messagingSenderId: "398537397385",
+        appId: "1:398537397385:web:9bd3aec82f44ddec20e258",
+        measurementId: "G-HLXHTQP41H"
+      };
+      if (window.firebase && !window.firebase.apps.length) {
+        window.firebase.initializeApp(firebaseConfig);
+      }
+    })();
+  </script>
+  <script src="js/app.js"></script>
+</body>
+</html>
